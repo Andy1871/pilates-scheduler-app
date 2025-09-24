@@ -28,7 +28,7 @@ export default function EventContent({
   className,
 }: Props) {
   const label = buildEventLabel({ title, timeLabel, view });
-  // Include status in SR text so screen readers get extra context.
+  // Include status in SR text so screen readers get extra context
   const srText = `${label}${status ? ` (${status})` : ""}`;
 
   return (

@@ -43,7 +43,7 @@ function MonthDayCellBase({
         // classnames given if the div has select conditions.
         "relative h-full min-h-24 border p-1.5 flex flex-col",
         !isCurrentMonth && "bg-muted/20 text-muted-foreground",
-        isToday && "ring-2 ring-primary ring-offset-2",
+        isToday && "outline outline-primary",
         selected && "outline outline-primary/40",
         className
       )}
