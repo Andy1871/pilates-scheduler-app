@@ -5,6 +5,13 @@ import { events } from "@/data/events";
 import type { CalendarEvent } from "@/types/event";
 import { useState } from "react";
 import { getStartOfThisMonth } from "@/lib/date-utils";
+import AddForm from "../AddForm";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import {
   startOfMonth,
@@ -15,6 +22,7 @@ import {
 } from "date-fns";
 
 import { formatInTZ } from "@/lib/date-utils";
+import BlockTimeForm from "../BlockTimeForm";
 
 export function buildMonthMatrix(viewDate: Date): DayModel[] {
   const start = startOfWeek(startOfMonth(viewDate), { weekStartsOn: 1 }); // local TZ
@@ -34,6 +42,7 @@ export function buildMonthMatrix(viewDate: Date): DayModel[] {
   }
   return days;
 }
+
 function groupEventsByDate( // builds a map, with the key = start time. each cell looks up its own events, rather than filtering array 42 times.
   list: CalendarEvent[]
 ): Record<string, CalendarEvent[]> {
@@ -47,6 +56,8 @@ function groupEventsByDate( // builds a map, with the key = start time. each cel
 
 export default function MonthView() {
   const [viewDate, setViewDate] = useState(getStartOfThisMonth());
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isBlockOpen, setisBlockOpen] = useState(false);
   const days = buildMonthMatrix(viewDate);
   const eventsByDate = groupEventsByDate(events);
 
@@ -57,8 +68,36 @@ export default function MonthView() {
         onPrev={() => setViewDate((d) => addMonths(d, -1))}
         onNext={() => setViewDate((d) => addMonths(d, 1))}
         onToday={() => setViewDate(getStartOfThisMonth())}
+        onAdd={() => setIsAddOpen(true)}
+        onBlock={() => setisBlockOpen(true)}
       />
       <MonthGrid days={days} eventsByDate={eventsByDate} className="mt-5" />
+
+      {isAddOpen && (
+        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex justify-center">
+                Add Booking
+              </DialogTitle>
+            </DialogHeader>
+            <AddForm />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {isBlockOpen && (
+        <Dialog open={isBlockOpen} onOpenChange={setisBlockOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex justify-center">
+                Block Time Out
+              </DialogTitle>
+            </DialogHeader>
+            <BlockTimeForm />
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 }

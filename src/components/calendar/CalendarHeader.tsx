@@ -1,11 +1,14 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { format } from 'date-fns'
+import { format } from "date-fns";
 type Props = {
   viewDate: Date;
   onPrev: () => void;
   onNext: () => void;
   onToday: () => void;
+  onAdd: () => void;
+  onBlock: () => void;
+  title?: string;
 };
 
 export default function CalendarHeader({
@@ -13,6 +16,9 @@ export default function CalendarHeader({
   onPrev,
   onNext,
   onToday,
+  onAdd,
+  onBlock,
+  title,
 }: Props) {
   return (
     <header className="w-full">
@@ -40,16 +46,16 @@ export default function CalendarHeader({
         </div>
 
         <div className="order-2 md:order-3 col-start-3 md:col-start-3 justify-self-end flex items-center gap-2">
-          <Button variant="outline" className="h-8">
+          <Button variant="outline" className="h-8" onClick={onAdd}>
             Add +
           </Button>
-          <Button variant="secondary" className="h-8">
+          <Button variant="secondary" className="h-8" onClick={onBlock}>
             Block -
           </Button>
         </div>
 
         <h3 className="order-3 md:order-2 col-span-3 md:col-span-1 md:col-start-2 justify-self-center text-center text-lg font-semibold mt-2 md:mt-0">
-          {format(viewDate, "MMMM yyyy")}
+          {title ?? format(viewDate, "MMMM yyyy") }
         </h3>
       </div>
     </header>
