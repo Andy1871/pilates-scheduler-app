@@ -24,4 +24,4 @@ export const getToday = () => new Date();
 // First day of this month in local TZ
 export const getStartOfThisMonth = () => startOfMonth(new Date());
 
-export const getStartOfThisWeek = () => startOfWeek(new Date())
+export const getStartOfThisWeek = () => startOfWeek(new Date(), { weekStartsOn: 1 })

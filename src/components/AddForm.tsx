@@ -82,8 +82,8 @@ export default function AddForm() {
                   <SelectValue placeholder="Select class" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1-2-1 reformer">1-2-1 Reformer</SelectItem>
-                  <SelectItem value="1-2-1 mat">1-2-1 Mat</SelectItem>
+                  <SelectItem value="reformer">Reformer</SelectItem>
+                  <SelectItem value="mat">Mat</SelectItem>
                   <SelectItem value="duo">Duo</SelectItem>
                 </SelectContent>
               </Select>
@@ -163,9 +163,8 @@ export default function AddForm() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="paid">Paid</SelectItem>
-                <SelectItem value="not paid">Not paid</SelectItem>
+                <SelectItem value="unpaid">Unpaid</SelectItem>
                 <SelectItem value="hold">Hold</SelectItem>
-                <SelectItem value="blocked">Blocked</SelectItem>
               </SelectContent>
             </Select>
           )}
