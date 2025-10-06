@@ -1,10 +1,31 @@
 "use client";
-import { useState } from "react";
-import { signIn } from "next-auth/react";
+
+import { useEffect, useState } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 export default function SignInPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
+
+  // If already signed in, redirect to home
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.push("/");
+    }
+  }, [status, router]);
+
+  // While session is loading, show nothing or a loader
+  if (status === "loading") {
+    return (
+      <main className="min-h-screen grid place-items-center p-6">
+        <p>Checking authentication…</p>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen grid place-items-center p-6">
       <div className="w-full max-w-sm rounded-2xl border p-6 space-y-4">
