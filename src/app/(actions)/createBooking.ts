@@ -39,7 +39,7 @@ export async function createBooking(
     status: (raw.status as string) ?? "unpaid",
     weeks: raw.weeks ?? 1,
   });
-  if (!parsed.success) return { ok: false, error: parsed.error.flatten().fieldErrors });
+  if (!parsed.success) return { ok: false, error: parsed.error.flatten().fieldErrors };
 
   const { dateISO, startTime, endTime, person, classType, status, weeks } = parsed.data;
 
