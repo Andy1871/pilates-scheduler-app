@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
+import { localInputToUTC } from "@/lib/date-utils";
 
 export type UpdateBlockResult =
   | { ok: true; updated: number }
@@ -18,18 +19,12 @@ const Payload = z.object({
   reason: z.string().min(1),
 });
 
-function toDate(dateISO: string, hhmm: string) {
-  return new Date(`${dateISO}T${hhmm}:00`);
-}
-
 export async function updateBlock(
-  _prev: any,
+  _prev: unknown,
   formData: FormData
 ): Promise<UpdateBlockResult> {
   const session = await auth();
-  if (!session?.user) {
-    return { ok: false, error: { _form: ["Not authenticated"] } };
-  }
+  if (!session?.user) return { ok: false, error: { _form: ["Not authenticated"] } };
   const userId = (session.user as any).id as string;
 
   const raw = Object.fromEntries(formData.entries());
@@ -41,13 +36,10 @@ export async function updateBlock(
     blockLength: raw.blockLength,
     reason: raw.reason,
   });
-
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.flatten().fieldErrors };
-  }
+  if (!parsed.success) return { ok: false, error: parsed.error.flatten().fieldErrors };
 
   const { id, scope, dateISO, startTime, blockLength, reason } = parsed.data;
-  const newStart = toDate(dateISO, startTime);
+  const newStart = localInputToUTC(`${dateISO}T${startTime}`);
   const newEnd = new Date(newStart.getTime() + blockLength * 60_000);
 
   const base = await prisma.event.findFirst({
@@ -60,7 +52,6 @@ export async function updateBlock(
 
   // Single
   if (scope === "one" || !base.seriesId) {
-    // avoid overlapping this user's bookings
     const overlapBooking = await prisma.event.findFirst({
       where: { userId, kind: "booking", start: { lt: newEnd }, end: { gt: newStart } },
       select: { id: true },
@@ -85,7 +76,7 @@ export async function updateBlock(
     return { ok: true, updated: 1 };
   }
 
-  // Series — shift by delta
+  // Series — shift by delta in UTC
   const deltaMs = newStart.getTime() - base.start.getTime();
 
   const series = await prisma.event.findMany({
@@ -99,21 +90,17 @@ export async function updateBlock(
     return { id: ev.id, start: s, end: e };
   });
 
-  // Validate (this user only)
   for (const u of updates) {
     const overlapBooking = await prisma.event.findFirst({
       where: { userId, kind: "booking", start: { lt: u.end }, end: { gt: u.start } },
       select: { id: true },
     });
     if (overlapBooking) {
-      return {
-        ok: false,
-        error: { _form: ["Series update conflicts with booking(s)"] },
-      };
+      return { ok: false, error: { _form: ["Series update conflicts with booking(s)"] } };
     }
   }
 
-  await prisma.$transaction(async (tx: any) => {
+  await prisma.$transaction(async (tx) => {
     for (const u of updates) {
       await tx.event.update({
         where: { id: u.id },

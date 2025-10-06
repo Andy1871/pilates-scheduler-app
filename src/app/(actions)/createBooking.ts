@@ -5,8 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
 import { auth } from "@/auth";
+import { localInputToUTC, addDaysISO } from "@/lib/date-utils";
 
-// Parse the payload coming from AddForm
 const Payload = z.object({
   dateISO: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   startTime: z.string().regex(/^\d{2}:\d{2}$/),
@@ -21,23 +21,12 @@ export type CreateBookingResult =
   | { ok: true; created: number }
   | { ok: false; error: Record<string, string | string[]> };
 
-function toDate(dateISO: string, hhmm: string) {
-  return new Date(`${dateISO}T${hhmm}:00`);
-}
-function addDays(d: Date, days: number) {
-  const copy = new Date(d);
-  copy.setDate(copy.getDate() + days);
-  return copy;
-}
-
 export async function createBooking(
-  _prev: any,
+  _prev: unknown,
   formData: FormData
 ): Promise<CreateBookingResult> {
   const session = await auth();
-  if (!session?.user) {
-    return { ok: false, error: { _form: ["Not authenticated"] } };
-  }
+  if (!session?.user) return { ok: false, error: { _form: ["Not authenticated"] } };
   const userId = (session.user as any).id as string;
 
   const raw = Object.fromEntries(formData.entries());
@@ -50,39 +39,33 @@ export async function createBooking(
     status: (raw.status as string) ?? "unpaid",
     weeks: raw.weeks ?? 1,
   });
-
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.flatten().fieldErrors };
-  }
+  if (!parsed.success) return { ok: false, error: parsed.error.flatten().fieldErrors });
 
   const { dateISO, startTime, endTime, person, classType, status, weeks } = parsed.data;
 
-  const start0 = toDate(dateISO, startTime);
-  const end0 = toDate(dateISO, endTime);
-  if (end0 <= start0) {
+  // First occurrence (wall-time) -> UTC
+  const startUTC0 = localInputToUTC(`${dateISO}T${startTime}`);
+  const endUTC0 = localInputToUTC(`${dateISO}T${endTime}`);
+  if (endUTC0 <= startUTC0) {
     return { ok: false, error: { endTime: ["End must be after start"] } };
   }
-  const durationMs = end0.getTime() - start0.getTime();
+  const durationMs = endUTC0.getTime() - startUTC0.getTime();
 
-  // Build each weekly occurrence in memory
+  // Weekly occurrences at the same London time, across DST correctly
   const occurrences = Array.from({ length: weeks }, (_, i) => {
-    const s = addDays(start0, i * 7);
+    const dISO = addDaysISO(dateISO, i * 7);
+    const s = localInputToUTC(`${dISO}T${startTime}`);
     const e = new Date(s.getTime() + durationMs);
     return { start: s, end: e };
   });
 
   const seriesId = weeks > 1 ? randomUUID() : undefined;
 
-  const created = await prisma.$transaction(async (tx: any) => {
+  const created = await prisma.$transaction(async (tx) => {
     for (const { start, end } of occurrences) {
       // Check only this user's calendar
       const overlapBooking = await tx.event.findFirst({
-        where: {
-          userId,
-          kind: "booking",
-          start: { lt: end },
-          end: { gt: start },
-        },
+        where: { userId, kind: "booking", start: { lt: end }, end: { gt: start } },
         select: { id: true, start: true },
       });
       if (overlapBooking) {
@@ -92,12 +75,7 @@ export async function createBooking(
       }
 
       const overlapBlock = await tx.event.findFirst({
-        where: {
-          userId,
-          kind: "block",
-          start: { lt: end },
-          end: { gt: start },
-        },
+        where: { userId, kind: "block", start: { lt: end }, end: { gt: start } },
         select: { id: true, start: true },
       });
       if (overlapBlock) {
@@ -110,19 +88,17 @@ export async function createBooking(
         data: {
           userId,
           kind: "booking",
-          status, // "paid" | "unpaid" | "hold"
+          status,
           start,
           end,
           person,
-          classType, // Prisma enum in UI; string in DB unless you defined an enum
+          classType,
           ...(seriesId && { seriesId }),
         },
       });
     }
     return occurrences.length;
-  }).catch((err: any) => {
-    return { error: err.message } as any;
-  });
+  }).catch((err: any) => ({ error: err.message } as any));
 
   if (typeof created !== "number") {
     return { ok: false, error: { _form: [created.error || "Failed to create booking(s)"] } };

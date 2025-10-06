@@ -1,27 +1,43 @@
-// lib/date-utils.ts
-import { startOfMonth, startOfWeek, addDays } from "date-fns";
-import { toZonedTime, formatInTimeZone } from "date-fns-tz";
+// src/lib/date-utils.ts
+import { startOfMonth, startOfWeek as dfStartOfWeek, addDays } from "date-fns";
+import { zonedTimeToUtc, utcToZonedTime, formatInTimeZone } from "date-fns-tz";
 
 export const TZ = "Europe/London";
 
-// Convert any Date to the target zone (for doing month/week math consistently)
-export const zoned = (date: Date) => toZonedTime(date, TZ);
+// normalize inputs so date-fns(-tz) is happy
+function asDate(input: Date | string | number): Date {
+  return input instanceof Date ? input : new Date(input);
+}
 
-// Format in TZ
-export const formatInTZ = (date: Date, fmt: string) =>
-  formatInTimeZone(date, TZ, fmt);
+/** Form input ("YYYY-MM-DDTHH:mm" in London) -> UTC Date to store in DB */
+export function localInputToUTC(naive: string): Date {
+  return zonedTimeToUtc(naive, TZ);
+}
 
-// Start-of-week in TZ (Monday=1)
-export const startOfWeekInTZ = (date: Date, weekStartsOn: 0 | 1 = 1) =>
-  startOfWeek(date, { weekStartsOn });
+/** UTC Date from DB -> London wall-clock Date for UI math/positioning */
+export function utcToLondon(d: Date | string | number): Date {
+  return utcToZonedTime(asDate(d), TZ);
+}
 
-// Add N days (on a zoned date)
-export const addDaysInTZ = (date: Date, days: number) => addDays(date, days);
+/** Format any UTC Date in London time */
+export function formatInTZ(d: Date | string | number, fmt: string) {
+  return formatInTimeZone(asDate(d), TZ, fmt);
+}
 
-// Today in local TZ (no toZonedTime)
-export const getToday = () => new Date();
+/** Week/month helpers that respect London boundaries */
+export function startOfWeekInTZ(d: Date | string | number, weekStartsOn: 0 | 1 = 1) {
+  return dfStartOfWeek(utcToLondon(d), { weekStartsOn });
+}
+export function startOfMonthInTZ(d: Date | string | number) {
+  return startOfMonth(utcToLondon(d));
+}
+export function addDaysInTZ(d: Date | string | number, days: number) {
+  return addDays(utcToLondon(d), days);
+}
 
-// First day of this month in local TZ
-export const getStartOfThisMonth = () => startOfMonth(new Date());
-
-export const getStartOfThisWeek = () => startOfWeek(new Date(), { weekStartsOn: 1 })
+/** Add days to a YYYY-MM-DD date string, return YYYY-MM-DD */
+export function addDaysISO(dateISO: string, days: number): string {
+  const d = new Date(dateISO + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}

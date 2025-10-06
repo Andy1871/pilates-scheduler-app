@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
 import { auth } from "@/auth";
+import { localInputToUTC, addDaysISO } from "@/lib/date-utils";
 
 const Payload = z.object({
   reason: z.string().min(3),
@@ -18,23 +19,12 @@ export type CreateBlockResult =
   | { ok: true; created: number }
   | { ok: false; error: Record<string, string | string[]> };
 
-function toDate(dateISO: string, hhmm: string) {
-  return new Date(`${dateISO}T${hhmm}:00`);
-}
-function addDays(d: Date, days: number) {
-  const copy = new Date(d);
-  copy.setDate(copy.getDate() + days);
-  return copy;
-}
-
 export async function createBlockBooking(
-  _prev: any,
+  _prev: unknown,
   formData: FormData
 ): Promise<CreateBlockResult> {
   const session = await auth();
-  if (!session?.user) {
-    return { ok: false, error: { _form: ["Not authenticated"] } };
-  }
+  if (!session?.user) return { ok: false, error: { _form: ["Not authenticated"] } };
   const userId = (session.user as any).id as string;
 
   const raw = Object.fromEntries(formData.entries());
@@ -45,20 +35,16 @@ export async function createBlockBooking(
     blockLength: raw.blockLength,
     weeks: raw.weeks ?? 1,
   });
-
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.flatten().fieldErrors };
-  }
+  if (!parsed.success) return { ok: false, error: parsed.error.flatten().fieldErrors };
 
   const { reason, startDate, startTime, blockLength, weeks } = parsed.data;
 
-  const start0 = toDate(startDate, startTime);
-  const end0 = new Date(start0.getTime() + blockLength * 60_000);
-
+  // Build weekly occurrences at the same London wall-time, convert each to UTC
   const occurrences = Array.from({ length: weeks }, (_, i) => {
-    const s = addDays(start0, i * 7);
-    const e = addDays(end0, i * 7);
-    return { start: s, end: e };
+    const dateISO = addDaysISO(startDate, i * 7);
+    const startUTC = localInputToUTC(`${dateISO}T${startTime}`);
+    const endUTC = new Date(startUTC.getTime() + blockLength * 60_000);
+    return { start: startUTC, end: endUTC };
   });
 
   const seriesId = weeks > 1 ? randomUUID() : undefined;
@@ -90,9 +76,7 @@ export async function createBlockBooking(
       });
     }
     return occurrences.length;
-  }).catch((err: any) => {
-    return { error: err.message } as any;
-  });
+  }).catch((err: any) => ({ error: err.message } as any));
 
   if (typeof created !== "number") {
     return { ok: false, error: { _form: [created.error || "Failed to create block(s)"] } };

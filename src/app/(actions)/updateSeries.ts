@@ -1,33 +1,48 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { AddBookingSchema } from "@/lib/validation";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { auth } from "@/auth";
+import { localInputToUTC } from "@/lib/date-utils";
+
+// assuming AddBookingSchema validates these fields:
+const Schema = z.object({
+  name: z.string().min(1),
+  class: z.enum(["reformer", "mat", "duo"]),
+  classLength: z.coerce.number().int().min(15).max(480),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/),
+  status: z.enum(["paid", "unpaid", "hold"]),
+});
 
 export async function updateSeries(seriesId: string, values: unknown) {
   const session = await auth();
   if (!session?.user) return { ok: false, error: { _form: ["Not authenticated"] } };
   const userId = (session.user as any).id as string;
 
-  const parsed = AddBookingSchema.safeParse(values);
+  const parsed = Schema.safeParse(values);
   if (!parsed.success) return { ok: false, error: parsed.error.flatten() };
 
   const { name, class: classType, classLength, startDate, startTime, status } = parsed.data;
 
-  const startISO = `${startDate}T${startTime}`;
-  const start = new Date(startISO);
+  // Single wall-time for the series "base" -> UTC
+  const start = localInputToUTC(`${startDate}T${startTime}`);
+  const end = new Date(start.getTime() + classLength * 60_000);
 
   const { count } = await prisma.event.updateMany({
-    where: { userId, seriesId },
+    where: { userId, seriesId, kind: "booking" },
     data: {
       person: name,
       classType,
       durationMins: classLength,
       status,
       start,
-      end: new Date(start.getTime() + classLength * 60 * 1000),
+      end,
     },
   });
 
+  revalidatePath("/week");
+  revalidatePath("/");
   return { ok: true, updated: count };
 }
