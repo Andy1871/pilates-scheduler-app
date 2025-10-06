@@ -5,6 +5,7 @@ import { chipVariants, type ChipVariantProps } from "@/lib/eventStyles";
 type Props = {
   title: string;
   timeLabel?: string;
+  classType?: string;
   status: "paid" | "unpaid" | "blocked" | "hold";
   selected?: boolean;
   className?: string;
@@ -14,15 +15,15 @@ type Props = {
 export default function EventChip({
   title,
   timeLabel,
+  classType,
   status,
   view,
   selected,
   className,
   onClick,
 }: Props) {
-
   const normalizedView: "month" | "week" | "day" = view ?? "month";
-  const label = buildEventLabel({ title, timeLabel, view: normalizedView });
+  const label = buildEventLabel({ title, timeLabel, classType, view: normalizedView });
 
   return (
     <button
@@ -39,6 +40,7 @@ export default function EventChip({
       <EventContent
         title={title}
         timeLabel={timeLabel}
+        classType={classType}
         status={status}
         view={normalizedView}
       />

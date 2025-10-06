@@ -1,3 +1,4 @@
+// components/calendar/MonthGrid.tsx
 "use client";
 
 import * as React from "react";
@@ -6,14 +7,14 @@ import MonthDayCell from "./MonthDayCell";
 import type { CalendarEvent } from "@/types/event";
 
 export type DayModel = {
-  dateISO: string; // key + label
-  isCurrentMonth: boolean; // mute out of month dates
-  isToday: boolean; // highlights today.
+  dateISO: string;        // key + label
+  isCurrentMonth: boolean; // mute out-of-month dates
+  isToday: boolean;        // highlight today
 };
 
 type Props = {
   days: DayModel[];
-  eventsByDate: Record<string, CalendarEvent[]>; // the lookup map
+  eventsByDate: Record<string, CalendarEvent[]>; // lookup map
   showWeekdayHeader?: boolean;
   className?: string;
 
@@ -43,7 +44,7 @@ export default function MonthGrid({
       role="grid"
       aria-label="Month grid"
     >
-      {showWeekdayHeader && ( // set to true inside props, so this renders.
+      {showWeekdayHeader && (
         <div
           className="grid grid-cols-7 px-1 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
           role="row"

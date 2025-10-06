@@ -1,11 +1,15 @@
+// components/calendar/MonthView.tsx
 "use client";
+
+import { useMemo, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+
 import MonthGrid, { type DayModel } from "./MonthGrid";
 import CalendarHeader from "./CalendarHeader";
-import { events } from "@/data/events";
-import type { CalendarEvent } from "@/types/event";
-import { useState } from "react";
-import { getStartOfThisMonth } from "@/lib/date-utils";
 import AddForm from "../AddForm";
+import BlockTimeForm from "../BlockTimeForm";
+import EditForm from "../EditForm"; 
+
 import {
   Dialog,
   DialogContent,
@@ -22,7 +26,13 @@ import {
 } from "date-fns";
 
 import { formatInTZ } from "@/lib/date-utils";
-import BlockTimeForm from "../BlockTimeForm";
+import type { CalendarEvent } from "@/types/event";
+
+type Props = {
+  visibleStart: string; // ISO for the first visible grid day (Mon of first row)
+  visibleEnd: string;   // ISO for the last visible grid day (Sun of last row)
+  events: CalendarEvent[];
+};
 
 export function buildMonthMatrix(viewDate: Date): DayModel[] {
   const start = startOfWeek(startOfMonth(viewDate), { weekStartsOn: 1 }); // local TZ
@@ -43,9 +53,7 @@ export function buildMonthMatrix(viewDate: Date): DayModel[] {
   return days;
 }
 
-function groupEventsByDate( // builds a map, with the key = start time. each cell looks up its own events, rather than filtering array 42 times.
-  list: CalendarEvent[]
-): Record<string, CalendarEvent[]> {
+function groupEventsByDate(list: CalendarEvent[]): Record<string, CalendarEvent[]> {
   const map: Record<string, CalendarEvent[]> = {};
   for (const ev of list) {
     const key = formatInTZ(new Date(ev.start), "yyyy-MM-dd");
@@ -54,24 +62,54 @@ function groupEventsByDate( // builds a map, with the key = start time. each cel
   return map;
 }
 
-export default function MonthView() {
-  const [viewDate, setViewDate] = useState(getStartOfThisMonth());
+export default function MonthView({ visibleStart, visibleEnd, events }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Derive the reference month from the midpoint of the visible grid
+  const viewDate = useMemo(() => {
+    const start = new Date(visibleStart);
+    const end = new Date(visibleEnd);
+    const mid = new Date((start.getTime() + end.getTime()) / 2);
+    return startOfMonth(mid);
+  }, [visibleStart, visibleEnd]);
+
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [isBlockOpen, setisBlockOpen] = useState(false);
-  const days = buildMonthMatrix(viewDate);
-  const eventsByDate = groupEventsByDate(events);
+  const [isBlockOpen, setIsBlockOpen] = useState(false);
+
+  // ✅ editing state
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedEvent = useMemo(
+    () => events.find((e) => e.id === selectedId) ?? null,
+    [selectedId, events]
+  );
+
+  const days = useMemo(() => buildMonthMatrix(viewDate), [viewDate]);
+  const eventsByDate = useMemo(() => groupEventsByDate(events), [events]);
+
+  const pushMonth = (d: Date) => {
+    const monthParam = format(startOfMonth(d), "yyyy-MM-01");
+    router.push(`${pathname}?month=${monthParam}`);
+  };
 
   return (
     <>
       <CalendarHeader
         viewDate={viewDate}
-        onPrev={() => setViewDate((d) => addMonths(d, -1))}
-        onNext={() => setViewDate((d) => addMonths(d, 1))}
-        onToday={() => setViewDate(getStartOfThisMonth())}
+        onPrev={() => pushMonth(addMonths(viewDate, -1))}
+        onNext={() => pushMonth(addMonths(viewDate, 1))}
+        onToday={() => pushMonth(new Date())}
         onAdd={() => setIsAddOpen(true)}
-        onBlock={() => setisBlockOpen(true)}
+        onBlock={() => setIsBlockOpen(true)}
       />
-      <MonthGrid days={days} eventsByDate={eventsByDate} className="mt-5" />
+
+      <MonthGrid
+        days={days}
+        eventsByDate={eventsByDate}
+        className="mt-5"
+        // ✅ open edit modal when an event chip is clicked
+        onOpenEvent={(id) => setSelectedId(id)}
+      />
 
       {isAddOpen && (
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
@@ -81,20 +119,40 @@ export default function MonthView() {
                 Add Booking
               </DialogTitle>
             </DialogHeader>
-            <AddForm />
+            <AddForm onSuccess={() => setIsAddOpen(false)} />
           </DialogContent>
         </Dialog>
       )}
 
       {isBlockOpen && (
-        <Dialog open={isBlockOpen} onOpenChange={setisBlockOpen}>
+        <Dialog open={isBlockOpen} onOpenChange={setIsBlockOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="flex justify-center">
                 Block Time Out
               </DialogTitle>
             </DialogHeader>
-            <BlockTimeForm />
+            <BlockTimeForm onSuccess={() => setIsBlockOpen(false)} />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* ✅ Edit dialog */}
+      {selectedEvent && (
+        <Dialog
+          open={!!selectedEvent}
+          onOpenChange={(open) => !open && setSelectedId(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex justify-center">
+                Edit {selectedEvent.kind === "booking" ? "Booking" : "Blocked Time"}
+              </DialogTitle>
+            </DialogHeader>
+            <EditForm
+              event={selectedEvent}
+              onSuccess={() => setSelectedId(null)}
+            />
           </DialogContent>
         </Dialog>
       )}

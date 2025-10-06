@@ -1,15 +1,17 @@
+// components/calendar/MonthDayCell.tsx
 "use client";
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import EventChip from "./EventChip";
-import type { CalendarEvent } from "../../types/event";
+import type { CalendarEvent } from "@/types/event";
+import { presentEventForChip } from "@/lib/eventPresenter";
 
 type Props = {
-  dateISO: string; // "2025-08-24"
+  dateISO: string;
   isCurrentMonth: boolean;
   isToday: boolean;
-  events: CalendarEvent[]; // already grouped for this date
+  events: CalendarEvent[];
   maxVisible?: number; // how many chips to show before "+N more"
   selected?: boolean;
   onOpenEvent?: (id: string) => void;
@@ -34,16 +36,16 @@ function MonthDayCellBase({
     () => parseInt(dateISO.slice(8, 10), 10),
     [dateISO]
   );
-  const visible = events.slice(0, maxVisible); // we basically count the first 4 events. anything after is the overflow. we use this to map our events into our cell.
+  // show first N events; rest collapse into "+N more"
+  const visible = events.slice(0, maxVisible);
   const overflow = events.length - visible.length;
 
   return (
     <div
       className={cn(
-        // classnames given if the div has select conditions.
         "relative h-full min-h-24 border p-1.5 flex flex-col",
         !isCurrentMonth && "bg-muted/20 text-muted-foreground",
-        isToday && "outline outline-primary",
+        isToday && "outline outline-sky-300 -outline-offset-1 bg-sky-50/40",
         selected && "outline outline-primary/40",
         className
       )}
@@ -56,7 +58,7 @@ function MonthDayCellBase({
         <span className="sr-only">{dateISO}</span>
         <span
           className={cn(
-            "ml-auto text-[11px] font-semibold leading-none",
+            "ml-auto text-[10px] leading-none",
             isToday && "text-primary"
           )}
         >
@@ -64,22 +66,21 @@ function MonthDayCellBase({
         </span>
       </div>
 
-      <div className="mt-1 space-y-1 overflow-hidden">
-        {visible.map(
-          (
-            ev // maps over everything that ISNT part of the overflow.
-          ) => (
+      <div className="overflow-hidden">
+        {visible.map((ev) => {
+          const presented = presentEventForChip(ev);
+          return (
             <EventChip
               key={ev.id}
-              status={ev.status}
+              status={presented.status}
               view="month"
-              title={ev.title}
+              title={presented.title}
+              classType={presented.classType}
               onClick={() => onOpenEvent?.(ev.id)}
             />
-          )
-        )}
-
-        {overflow > 0 && ( // only shows if there is an overflow of events.
+          );
+        })}
+        {overflow > 0 && (
           <button
             type="button"
             onClick={(e) => {
