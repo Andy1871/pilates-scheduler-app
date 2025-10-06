@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import NavBar from "@/components/NavBar";
 import SignOutButton from "@/components/SignOutButton";
+import Providers from "./Providers";
 
 export const metadata: Metadata = {
   title: "Pilates Scheduler",
@@ -24,7 +25,7 @@ export default function RootLayout({
           </div>
         </header>
 
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
