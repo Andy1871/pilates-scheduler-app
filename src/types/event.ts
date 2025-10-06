@@ -7,6 +7,7 @@ type BaseEvent = {
   start: string; 
   end: string;  
   notes?: string;
+  seriesId?: string | null;
 };
 
 export type BookingEvent = BaseEvent & {

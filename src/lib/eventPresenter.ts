@@ -1,26 +1,38 @@
 import { format } from "date-fns";
-import type { CalendarEvent } from "@/types/event"; 
+import type { CalendarEvent, BookingEvent, BlockEvent } from "@/types/event";
 import { CLASS_LABEL } from "@/lib/display";
 
-export function presentEventForChip(ev: CalendarEvent) {
-  const startLabel = format(new Date(ev.start), "HH:mm");
-  const endLabel = format(new Date(ev.end), "HH:mm");
-  const timeLabel = `${startLabel}–${endLabel}`;
+type ChipData = {
+  timeLabel: string;
+  title: string;
+  classType?: string;
+  // Allow both booking statuses and the block status
+  status: CalendarEvent["status"] | "blocked";
+};
+
+export function presentEventForChip(ev: CalendarEvent): ChipData {
+  const s = new Date(ev.start);
+  const e = new Date(ev.end);
+  const timeLabel = `${format(s, "HH:mm")}–${format(e, "HH:mm")}`;
 
   if (ev.kind === "booking") {
-    const classPretty = CLASS_LABEL[ev.classType]; // safe: ev.classType exists only on bookings
+    const b = ev as BookingEvent;
+    // CLASS_LABEL lookup can be undefined if key is missing; guard it
+    const classPretty = b.classType ? CLASS_LABEL[b.classType] : undefined;
     return {
       timeLabel,
-      title: ev.person,          // name goes in title
-      classType: classPretty,    // pretty string for UI
-      status: ev.status,
+      title: b.person || "Booking",
+      classType: classPretty,
+      status: b.status, // "paid" | "unpaid" | "hold"
     };
   }
 
+  // Block
+  const blk = ev as BlockEvent;
   return {
     timeLabel,
-    title: ev.reason,             // block reason
+    title: (blk.reason || "Blocked").trim(),
     classType: undefined,
-    status: "blocked" as const,
+    status: "blocked",
   };
 }

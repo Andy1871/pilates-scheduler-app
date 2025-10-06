@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
+
 import CalendarHeader from "./CalendarHeader";
 import WeekGrid from "./WeekGrid";
-import type { CalendarEvent } from "@/types/event";
-import { events } from "@/data/events";
-import { getStartOfThisWeek } from "@/lib/date-utils";
-import { getWeekRangeLabel } from "@/lib/week-label";
 import AddForm from "../AddForm";
 import BlockTimeForm from "../BlockTimeForm";
+import EditForm from "../EditForm";
+
 import {
   Dialog,
   DialogContent,
@@ -16,9 +16,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { getWeekRangeLabel } from "@/lib/week-label";
 import { addWeeks, startOfWeek, addDays, format } from "date-fns";
 
-import { formatInTZ } from "@/lib/date-utils";
+import type { CalendarEvent, BookingEvent, BlockEvent } from "@/types/event";
+
+type Props = {
+  start: string; // ISO
+  end: string; // ISO
+  events: CalendarEvent[];
+};
 
 export type WeekDayModel = {
   dateISO: string;
@@ -32,60 +39,94 @@ export function buildWeekMatrix(viewDate: Date): WeekDayModel[] {
   return Array.from({ length: 7 }, (_, i) => {
     const d = addDays(startMon, i);
     const iso = format(d, "yyyy-MM-dd");
-    return {
-      dateISO: iso,
-      isToday: iso === todayISO,
-    };
+    return { dateISO: iso, isToday: iso === todayISO };
   });
 }
 
-function groupEventsByWeekDay( // builds a map, with the key = start time. each cell looks up its own events, rather than filtering array 42 times.
-  list: CalendarEvent[]
-): Record<string, CalendarEvent[]> {
-  const map: Record<string, CalendarEvent[]> = {};
+// group bookings/blocks by day key "yyyy-MM-dd"
+export function groupEventsByWeekDay<T extends { start: string }>(
+  list: T[]
+): Record<string, T[]> {
+  const map: Record<string, T[]> = {};
   for (const ev of list) {
-    const key = formatInTZ(new Date(ev.start), "yyyy-MM-dd");
+    const key = format(new Date(ev.start), "yyyy-MM-dd");
     (map[key] ??= []).push(ev);
   }
   return map;
 }
 
-export default function WeekView() {
-  const [viewDate, setViewDate] = useState(getStartOfThisWeek());
+export default function WeekView({ start, end, events }: Props) {
+  const router = useRouter();
+
+  // Drive UI from server-provided start so data & view stay in sync
+  const viewDate = useMemo(
+    () => startOfWeek(new Date(start), { weekStartsOn: 1 }),
+    [start]
+  );
+
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [isBlockOpen, setisBlockOpen] = useState(false);
+  const [isBlockOpen, setIsBlockOpen] = useState(false);
 
   const days = buildWeekMatrix(viewDate);
-  const eventsByWeekDay = groupEventsByWeekDay(events);
   const headerTitle = getWeekRangeLabel(viewDate);
   const weekKey = format(
     startOfWeek(viewDate, { weekStartsOn: 1 }),
     "yyyy-MM-dd"
   );
 
-  console.log("TodayISO", format(new Date(), "yyyy-MM-dd"));
-console.log("Week days", days.map(d => `${d.dateISO}:${d.isToday}`));
+  const go = (d: Date) => {
+    const monday = startOfWeek(d, { weekStartsOn: 1 });
+    const iso = format(monday, "yyyy-MM-dd");
+    router.push(`/week?from=${iso}`);
+  };
+
+  const bookingEvents = useMemo(
+    () => events.filter((e) => e.kind === "booking") as BookingEvent[],
+    [events]
+  );
+
+  const blockEvents = useMemo(
+    () => events.filter((e) => e.kind === "block") as BlockEvent[],
+    [events]
+  );
+
+  const bookingByWeekDay = useMemo(
+    () => groupEventsByWeekDay(bookingEvents),
+    [bookingEvents]
+  );
+  const blockByWeekDay = useMemo(
+    () => groupEventsByWeekDay(blockEvents),
+    [blockEvents]
+  );
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedEvent = useMemo(
+    () => events.find((e) => e.id === selectedId) ?? null,
+    [selectedId, events]
+  );
 
   return (
     <>
       <CalendarHeader
         title={headerTitle}
         viewDate={viewDate}
-        onPrev={() => setViewDate((d) => addWeeks(d, -1))}
-        onNext={() => setViewDate((d) => addWeeks(d, 1))}
-        onToday={() => setViewDate(getStartOfThisWeek())}
+        onPrev={() => go(addWeeks(viewDate, -1))}
+        onNext={() => go(addWeeks(viewDate, 1))}
+        onToday={() => go(new Date())}
         onAdd={() => setIsAddOpen(true)}
-        onBlock={() => setisBlockOpen(true)}
+        onBlock={() => setIsBlockOpen(true)}
       />
 
       <WeekGrid
         key={weekKey}
         days={days}
-        eventsByDate={eventsByWeekDay}
+        bookingByWeekDay={bookingByWeekDay}
+        blockByWeekDay={blockByWeekDay}
         className="mt-5"
         startHour={7}
         endHour={21}
         slotMinutes={30}
+        onOpenEvent={(id) => setSelectedId(id)}
       />
 
       {isAddOpen && (
@@ -96,20 +137,41 @@ console.log("Week days", days.map(d => `${d.dateISO}:${d.isToday}`));
                 Add Booking
               </DialogTitle>
             </DialogHeader>
-            <AddForm />
+            <AddForm onSuccess={() => setIsAddOpen(false)} />
           </DialogContent>
         </Dialog>
       )}
 
       {isBlockOpen && (
-        <Dialog open={isBlockOpen} onOpenChange={setisBlockOpen}>
+        <Dialog open={isBlockOpen} onOpenChange={setIsBlockOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="flex justify-center">
                 Block Time Out
               </DialogTitle>
             </DialogHeader>
-            <BlockTimeForm />
+            {/* ✅ close the correct dialog */}
+            <BlockTimeForm onSuccess={() => setIsBlockOpen(false)} />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {selectedEvent && (
+        <Dialog
+          open={!!selectedEvent}
+          onOpenChange={(open) => !open && setSelectedId(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex justify-center">
+                Edit{" "}
+                {selectedEvent.kind === "booking" ? "Booking" : "Blocked Time"}
+              </DialogTitle>
+            </DialogHeader>
+            <EditForm
+              event={selectedEvent}
+              onSuccess={() => setSelectedId(null)}
+            />
           </DialogContent>
         </Dialog>
       )}

@@ -1,0 +1,122 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/**
+ * =======================
+ * Your existing enums
+ * =======================
+ */
+enum Status {
+  paid
+  unpaid
+  hold
+  blocked
+}
+
+enum ClassType {
+  reformer
+  mat
+  duo
+}
+
+enum Kind {
+  booking
+  block
+}
+
+/**
+ * =======================
+ * Auth models (NextAuth v5 / Auth.js)
+ * =======================
+ */
+
+model User {
+  id    String  @id @default(cuid())
+  name  String?
+  email String? @unique
+  image String?
+
+  // Relations
+  events   Event[]
+  accounts Account[]
+  sessions Session[]
+}
+
+model Account {
+  id                String @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+
+  access_token  String?
+  refresh_token String?
+  expires_at    Int?
+  token_type    String?
+  scope         String?
+  id_token      String?
+  session_state String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+/**
+ * =======================
+ * Event model (augmented)
+ * NOTE: userId is OPTIONAL for now for backward-compatibility.
+ * After backfilling, change to: userId String  (required) and migrate again.
+ * =======================
+ */
+
+model Event {
+  id     String  @id @default(cuid())
+  // NEW: link to User (optional initially to avoid breaking existing rows)
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  seriesId     String?
+  kind         Kind
+  status       Status
+  start        DateTime
+  end          DateTime
+  person       String?
+  classType    ClassType?
+  durationMins Int?
+  reason       String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([start])
+  @@index([end])
+  @@index([seriesId])
+  @@index([userId]) // helpful for scoping/queries
+}
