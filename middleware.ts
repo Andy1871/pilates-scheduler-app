@@ -2,7 +2,8 @@
 export { auth as middleware } from "@/auth";
 
 export const config = {
+  // Run auth on all paths EXCEPT these public ones
   matcher: [
-    "/", "/week",
+    "/((?!signin|api/_debug-db|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)",
   ],
 };
