@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "prisma generate && next build --turbopack",
-    "postbuild": "node scripts/check-db.js && prisma migrate deploy",
+    "postbuild": "echo 'skip migrate on build'",
     "start": "next start",
     "lint": "eslint",
     "prisma": "prisma"
