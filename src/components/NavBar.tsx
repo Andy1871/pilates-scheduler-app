@@ -20,10 +20,6 @@ export default function NavBar() {
       <Link href="/week" className={linkClass("/week")}>
         WEEK
       </Link>
-      <span aria-hidden>/</span>
-      <Link href="/day" className={linkClass("/day")}>
-        DAY
-      </Link>
     </nav>
   );
 }

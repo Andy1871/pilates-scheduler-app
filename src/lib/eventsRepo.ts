@@ -4,12 +4,13 @@ import type { CalendarEvent } from "@/types/event";
 import type { ClassType } from "@prisma/client";
 
 // return events that overlap [from, to)
-export async function getEventsInRange(fromISO: string, toISO: string): Promise<CalendarEvent[]> {
+export async function getEventsInRange(fromISO: string, toISO: string, userId: string): Promise<CalendarEvent[]> {
   const from = new Date(fromISO);
   const to = new Date(toISO);
 
   const rows = await prisma.event.findMany({
     where: {
+      userId,
       start: { lt: to },
       end: { gt: from },
     },

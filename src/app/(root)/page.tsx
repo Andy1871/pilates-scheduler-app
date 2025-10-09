@@ -11,6 +11,7 @@ export default async function Home({
 }) {
   const session = await auth();
   if (!session?.user) redirect("/signin");
+  const userId = (session.user as any).id as string;
 
   const params = await searchParams;
 
@@ -21,7 +22,8 @@ export default async function Home({
 
   const events = await getEventsInRange(
     visibleStart.toISOString(),
-    visibleEnd.toISOString()
+    visibleEnd.toISOString(),
+    userId
   );
 
   return (

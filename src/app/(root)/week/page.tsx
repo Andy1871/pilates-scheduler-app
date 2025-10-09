@@ -11,6 +11,7 @@ export default async function WeekPage({
 }) {
   const session = await auth();
   if (!session?.user) redirect("/signin");
+  const userId = (session.user as any).id as string
   
   const params = await searchParams;
 
@@ -20,7 +21,8 @@ export default async function WeekPage({
 
   const events = await getEventsInRange(
     weekStart.toISOString(),
-    weekEnd.toISOString()
+    weekEnd.toISOString(),
+    userId
   );
 
   return (

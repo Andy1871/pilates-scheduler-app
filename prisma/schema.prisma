@@ -65,8 +65,8 @@ model Event {
   updatedAt    DateTime   @updatedAt
   durationMins Int?
   seriesId     String?
-  userId       String?
-  user         User?      @relation(fields: [userId], references: [id])
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([start])
   @@index([end])

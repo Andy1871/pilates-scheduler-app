@@ -13,14 +13,13 @@ export default function SignInPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  // If already signed in, redirect to home
   useEffect(() => {
     if (status === "authenticated") {
       router.push("/");
     }
   }, [status, router]);
 
-  // While session is loading, show nothing or a loader
+
   if (status === "loading") {
     return (
       <main className="min-h-screen grid place-items-center p-6">
