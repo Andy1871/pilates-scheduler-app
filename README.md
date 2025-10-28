@@ -42,10 +42,12 @@ Manage sessions, clients, and time blocks all in one intuitive weekly and monthl
 
 ## Folder Structure
 
-```app/ 
+```
+app/ 
       (actions)/ # Server actions to create and update bookings
       (root)/ # Day and Week pages
       signin/ # Signin page
       components/ # UI components
-      lib/ # Helpers and validation```
+      lib/ # Helpers and validation
+```
 
