@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pilates Scheduler
 
-## Getting Started
+A **Next.js calendar scheduling app** built for self-employed Pilates professionals.  
+Manage sessions, clients, and time blocks all in one intuitive weekly and monthly view.
 
-First, run the development server:
+**Live Demo:** [pilates-scheduler.vercel.app](https://pilates-scheduler.vercel.app/) - Free, secure login via Google 
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![shadcn/ui](https://img.shields.io/badge/shadcn/ui-18181B?style=for-the-badge)
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Month and Week Views** — switch easily between layouts  
+- **Create Booking form** — populate the calendar with new sessions
+- **Edit Booking form** — switch between the recurring series or individual booking 
+- **Colour-coded events** — indicate paid, unpaid, blocked, or held sessions  
+- **Responsive design** — works smoothly on mobile, tablet and desktop  
+- **User authentication** — each user’s calendar is stored privately  
+- **Supabase + Prisma backend** — scalable, secure data storage  
+- **Deployed on Vercel**
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Tech Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Category | Technology |
+|-----------|-------------|
+| Framework | [Next.js 14](https://nextjs.org/) (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS, [shadcn/ui](https://ui.shadcn.com/) |
+| Backend | Supabase (Auth + DB), Prisma ORM |
+| Deployment | Vercel |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## Folder Structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+app/ 
+  (actions)/ # Server actions to create and update bookings
+  (root)/ # Day and Week pages
+  signin/ # Signin page
+  components/ # UI components
+  lib/ # Helpers and validation
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
