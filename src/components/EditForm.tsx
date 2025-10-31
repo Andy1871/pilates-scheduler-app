@@ -12,8 +12,18 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
 import type { CalendarEvent, BookingEvent, BlockEvent } from "@/types/event";
-import { updateBooking, type UpdateBookingResult } from "@/app/(actions)/updateBooking";
-import { updateBlock,   type UpdateBlockResult   } from "@/app/(actions)/updateBlock";
+import {
+  updateBooking,
+  type UpdateBookingResult,
+} from "@/app/(actions)/updateBooking";
+import {
+  updateBlock,
+  type UpdateBlockResult,
+} from "@/app/(actions)/updateBlock";
+import {
+  deleteBooking,
+  type DeleteBookingResult,
+} from "@/app/(actions)/deleteBooking";
 
 // ----- helpers --------------------------------------------------------------
 
@@ -116,7 +126,9 @@ export default function EditForm({ event, onSuccess }: Props) {
     formState: { errors: errorsBooking },
     setValue: setBookingValue,
     watch: watchBooking,
-  } = useForm<BookingForm>({ defaultValues: defaults as unknown as BookingForm });
+  } = useForm<BookingForm>({
+    defaultValues: defaults as unknown as BookingForm,
+  });
 
   const applySeriesBooking = watchBooking("scope") === "series";
 
@@ -133,24 +145,41 @@ export default function EditForm({ event, onSuccess }: Props) {
 
   // ----- server actions with useActionState (accept FormData) ---------------
 
-  const [bookingState, bookingAction] = useActionState<UpdateBookingResult | null, FormData>(updateBooking, null);
-  const [blockState,   blockAction]   = useActionState<UpdateBlockResult   | null, FormData>(updateBlock,   null);
+  const [bookingState, bookingAction] = useActionState<
+    UpdateBookingResult | null,
+    FormData
+  >(updateBooking, null);
+  const [blockState, blockAction] = useActionState<
+    UpdateBlockResult | null,
+    FormData
+  >(updateBlock, null);
+  const [deleteState, deleteAction] = useActionState<
+    DeleteBookingResult | null,
+    FormData
+  >(deleteBooking, null);
 
   // On success: refresh + close
   useEffect(() => {
-    const ok = isBooking ? bookingState?.ok : blockState?.ok;
+    const ok = isBooking ? bookingState?.ok || deleteState?.ok : blockState?.ok;
     if (ok) {
       router.refresh();
       onSuccess?.();
     }
-  }, [bookingState?.ok, blockState?.ok, isBooking, router, onSuccess]);
+  }, [
+    bookingState?.ok,
+    deleteState?.ok,
+    blockState?.ok,
+    isBooking,
+    router,
+    onSuccess,
+  ]);
 
   // ----- Submit handlers ----------------------------------------------------
 
   const onSubmitBooking = (values: BookingForm) => {
     const fd = new FormData();
     fd.set("id", event.id);
-    fd.set("scope", values.scope);          // "one" | "series"
+    fd.set("scope", values.scope); // "one" | "series"
     fd.set("dateISO", values.dateISO);
     fd.set("startTime", values.startTime);
     fd.set("endTime", values.endTime);
@@ -169,7 +198,7 @@ export default function EditForm({ event, onSuccess }: Props) {
   const onSubmitBlock = (values: BlockForm) => {
     const fd = new FormData();
     fd.set("id", event.id);
-    fd.set("scope", values.scope);          // "one" | "series"
+    fd.set("scope", values.scope); // "one" | "series"
     fd.set("dateISO", values.dateISO);
     fd.set("startTime", values.startTime);
     fd.set("blockLength", String(values.blockLength));
@@ -183,18 +212,46 @@ export default function EditForm({ event, onSuccess }: Props) {
     startTransition(() => blockAction(fd));
   };
 
+  const onDeleteBooking = () => {
+    // Respect the “Apply to series” toggle
+    const scope = applySeriesBooking ? "series" : "one";
+
+    // (Optional) confirm in UI
+    if (
+      !window.confirm(
+        scope === "series"
+          ? "Delete ALL bookings in this series?"
+          : "Delete this booking?"
+      )
+    ) {
+      return;
+    }
+
+    const fd = new FormData();
+    fd.set("id", event.id);
+    fd.set("scope", scope);
+
+    startTransition(() => deleteAction(fd));
+  };
+
   // ----- UI -----------------------------------------------------------------
 
   if (isBooking) {
     return (
-      <form onSubmit={handleSubmitBooking(onSubmitBooking)} className="flex flex-col gap-4">
+      <form
+        onSubmit={handleSubmitBooking(onSubmitBooking)}
+        className="flex flex-col gap-4"
+      >
         {hasSeries && (
           <div className="flex items-center gap-3">
             <Switch
               id="applyToSeries"
               checked={applySeriesBooking}
               onCheckedChange={(checked) =>
-                setBookingValue("scope", checked ? "series" : "one", { shouldDirty: true, shouldTouch: true })
+                setBookingValue("scope", checked ? "series" : "one", {
+                  shouldDirty: true,
+                  shouldTouch: true,
+                })
               }
             />
             <Label htmlFor="applyToSeries">Apply to all in this series</Label>
@@ -202,51 +259,97 @@ export default function EditForm({ event, onSuccess }: Props) {
         )}
 
         {/* hidden scope field registered with RHF (no fixed value prop) */}
-        <input id="edit-booking-scope" type="hidden" {...registerBooking("scope")} />
+        <input
+          id="edit-booking-scope"
+          type="hidden"
+          {...registerBooking("scope")}
+        />
 
         <div>
           <Label htmlFor="dateISO">Date</Label>
           <Input id="dateISO" type="date" {...registerBooking("dateISO")} />
-          {errorsBooking.dateISO && <p className="text-red-600">{String(errorsBooking.dateISO.message)}</p>}
+          {errorsBooking.dateISO && (
+            <p className="text-red-600">
+              {String(errorsBooking.dateISO.message)}
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label htmlFor="startTime">Start</Label>
-            <Input id="startTime" type="time" step={300} {...registerBooking("startTime")} />
-            {errorsBooking.startTime && <p className="text-red-600">{String(errorsBooking.startTime.message)}</p>}
+            <Input
+              id="startTime"
+              type="time"
+              step={300}
+              {...registerBooking("startTime")}
+            />
+            {errorsBooking.startTime && (
+              <p className="text-red-600">
+                {String(errorsBooking.startTime.message)}
+              </p>
+            )}
           </div>
           <div>
             <Label htmlFor="endTime">End</Label>
-            <Input id="endTime" type="time" step={300} {...registerBooking("endTime")} />
-            {errorsBooking.endTime && <p className="text-red-600">{String(errorsBooking.endTime.message)}</p>}
+            <Input
+              id="endTime"
+              type="time"
+              step={300}
+              {...registerBooking("endTime")}
+            />
+            {errorsBooking.endTime && (
+              <p className="text-red-600">
+                {String(errorsBooking.endTime.message)}
+              </p>
+            )}
           </div>
         </div>
 
         <div>
           <Label htmlFor="person">Client</Label>
           <Input id="person" {...registerBooking("person")} />
-          {errorsBooking.person && <p className="text-red-600">{String(errorsBooking.person.message)}</p>}
+          {errorsBooking.person && (
+            <p className="text-red-600">
+              {String(errorsBooking.person.message)}
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label htmlFor="classType">Class</Label>
-            <select id="classType" className="border rounded px-2 py-1 w-full" {...registerBooking("classType")}>
+            <select
+              id="classType"
+              className="border rounded px-2 py-1 w-full"
+              {...registerBooking("classType")}
+            >
               <option value="reformer">Reformer</option>
               <option value="mat">Mat</option>
               <option value="duo">Duo</option>
             </select>
-            {errorsBooking.classType && <p className="text-red-600">{String(errorsBooking.classType.message)}</p>}
+            {errorsBooking.classType && (
+              <p className="text-red-600">
+                {String(errorsBooking.classType.message)}
+              </p>
+            )}
           </div>
           <div>
             <Label htmlFor="status">Status</Label>
-            <select id="status" className="border rounded px-2 py-1 w-full" {...registerBooking("status")}>
+            <select
+              id="status"
+              className="border rounded px-2 py-1 w-full"
+              {...registerBooking("status")}
+            >
               <option value="paid">Paid</option>
               <option value="unpaid">Unpaid</option>
               <option value="hold">Hold</option>
             </select>
-            {errorsBooking.status && <p className="text-red-600">{String(errorsBooking.status.message)}</p>}
+            {errorsBooking.status && (
+              <p className="text-red-600">
+                {String(errorsBooking.status.message)}
+              </p>
+            )}
           </div>
         </div>
 
@@ -258,23 +361,44 @@ export default function EditForm({ event, onSuccess }: Props) {
           </div>
         )}
 
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Saving..." : "Save"}
-        </Button>
+        <div className="flex items-center justify-between">
+          <Button type="submit" disabled={isPending}>
+            {isPending ? "Saving..." : "Save"}
+          </Button>
+
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={onDeleteBooking}
+            disabled={isPending}
+          >
+            {isPending
+              ? "Deleting..."
+              : applySeriesBooking
+              ? "Delete series"
+              : "Delete booking"}
+          </Button>
+        </div>
       </form>
     );
   }
 
   // Block form
   return (
-    <form onSubmit={handleSubmitBlock(onSubmitBlock)} className="flex flex-col gap-4">
+    <form
+      onSubmit={handleSubmitBlock(onSubmitBlock)}
+      className="flex flex-col gap-4"
+    >
       {hasSeries && (
         <div className="flex items-center gap-3">
           <Switch
             id="applyToSeries"
             checked={applySeriesBlock}
             onCheckedChange={(checked) =>
-              setBlockValue("scope", checked ? "series" : "one", { shouldDirty: true, shouldTouch: true })
+              setBlockValue("scope", checked ? "series" : "one", {
+                shouldDirty: true,
+                shouldTouch: true,
+              })
             }
           />
           <Label htmlFor="applyToSeries">Apply to all in this series</Label>
@@ -282,19 +406,34 @@ export default function EditForm({ event, onSuccess }: Props) {
       )}
 
       {/* hidden scope field registered with RHF (no fixed value prop) */}
-      <input id="edit-block-scope" type="hidden" {...(registerBlock("scope") as any)} />
+      <input
+        id="edit-block-scope"
+        type="hidden"
+        {...(registerBlock("scope") as any)}
+      />
 
       <div>
         <Label htmlFor="dateISO">Date</Label>
         <Input id="dateISO" type="date" {...registerBlock("dateISO")} />
-        {errorsBlock.dateISO && <p className="text-red-600">{String(errorsBlock.dateISO.message)}</p>}
+        {errorsBlock.dateISO && (
+          <p className="text-red-600">{String(errorsBlock.dateISO.message)}</p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label htmlFor="startTime">Start</Label>
-          <Input id="startTime" type="time" step={300} {...registerBlock("startTime")} />
-          {errorsBlock.startTime && <p className="text-red-600">{String(errorsBlock.startTime.message)}</p>}
+          <Input
+            id="startTime"
+            type="time"
+            step={300}
+            {...registerBlock("startTime")}
+          />
+          {errorsBlock.startTime && (
+            <p className="text-red-600">
+              {String(errorsBlock.startTime.message)}
+            </p>
+          )}
         </div>
         <div>
           <Label htmlFor="blockLength">Duration (mins)</Label>
@@ -307,7 +446,10 @@ export default function EditForm({ event, onSuccess }: Props) {
           />
           {errorsBlock.blockLength && (
             <p className="text-red-600">
-              {String((errorsBlock.blockLength as any).message || errorsBlock.blockLength)}
+              {String(
+                (errorsBlock.blockLength as any).message ||
+                  errorsBlock.blockLength
+              )}
             </p>
           )}
         </div>
@@ -316,7 +458,9 @@ export default function EditForm({ event, onSuccess }: Props) {
       <div>
         <Label htmlFor="reason">Reason</Label>
         <Input id="reason" {...registerBlock("reason")} />
-        {errorsBlock.reason && <p className="text-red-600">{String(errorsBlock.reason.message)}</p>}
+        {errorsBlock.reason && (
+          <p className="text-red-600">{String(errorsBlock.reason.message)}</p>
+        )}
       </div>
 
       {blockState && !blockState.ok && blockState.error && (
