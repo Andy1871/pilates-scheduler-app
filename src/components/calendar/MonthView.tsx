@@ -1,4 +1,3 @@
-// components/calendar/MonthView.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -66,7 +65,7 @@ export default function MonthView({ visibleStart, visibleEnd, events }: Props) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Derive the reference month from the midpoint of the visible grid
+  // Find the reference month from the midpoint of the visible grid
   const viewDate = useMemo(() => {
     const start = new Date(visibleStart);
     const end = new Date(visibleEnd);
@@ -77,16 +76,18 @@ export default function MonthView({ visibleStart, visibleEnd, events }: Props) {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isBlockOpen, setIsBlockOpen] = useState(false);
 
-  // ✅ editing state
+  
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedEvent = useMemo(
     () => events.find((e) => e.id === selectedId) ?? null,
     [selectedId, events]
   );
 
+
   const days = useMemo(() => buildMonthMatrix(viewDate), [viewDate]);
   const eventsByDate = useMemo(() => groupEventsByDate(events), [events]);
 
+  // set router params to month info 
   const pushMonth = (d: Date) => {
     const monthParam = format(startOfMonth(d), "yyyy-MM-01");
     router.push(`${pathname}?month=${monthParam}`);
@@ -107,7 +108,7 @@ export default function MonthView({ visibleStart, visibleEnd, events }: Props) {
         days={days}
         eventsByDate={eventsByDate}
         className="mt-5"
-        // ✅ open edit modal when an event chip is clicked
+        // open edit modal when an event chip is clicked
         onOpenEvent={(id) => setSelectedId(id)}
       />
 
@@ -137,7 +138,7 @@ export default function MonthView({ visibleStart, visibleEnd, events }: Props) {
         </Dialog>
       )}
 
-      {/* ✅ Edit dialog */}
+      {/* Edit dialog */}
       {selectedEvent && (
         <Dialog
           open={!!selectedEvent}

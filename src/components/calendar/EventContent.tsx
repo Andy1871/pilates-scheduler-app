@@ -19,7 +19,7 @@ function classAbbreviation(c?: string) {
   return first;
 }
 
-/** Single, human-readable label (used for aria + tooltips) */
+// Event label
 export function buildEventLabel(opts: {
   title: string;
   timeLabel?: string;
@@ -28,7 +28,7 @@ export function buildEventLabel(opts: {
 }) {
   const { title, timeLabel, classType, view } = opts;
 
-  // Month view stays compact; week/day can include time + classType
+  // Month view stays compact, week can include time and classType
   if (view === "month" || !timeLabel) {
     return classType ? `${title} — ${classType}` : title;
   }
@@ -48,7 +48,7 @@ export default function EventContent({
   const isMonth = view === "month";
   const abbr = classAbbreviation(classType);
 
-  // Stack lines for week/day; allow truncation in month
+  // stack lines for week, truncate for month
   const containerClass = isMonth
     ? "flex h-5 items-center gap-1 truncate text-[11px] leading-4"
     : "flex h-full flex-col justify-center items-center whitespace-normal break-words";

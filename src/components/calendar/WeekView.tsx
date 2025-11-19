@@ -58,7 +58,7 @@ export function groupEventsByWeekDay<T extends { start: string }>(
 export default function WeekView({ start, end, events }: Props) {
   const router = useRouter();
 
-  // Drive UI from server-provided start so data & view stay in sync
+  // UI comes from server provided start so data and view are in sync
   const viewDate = useMemo(
     () => startOfWeek(new Date(start), { weekStartsOn: 1 }),
     [start]
@@ -150,7 +150,7 @@ export default function WeekView({ start, end, events }: Props) {
                 Block Time Out
               </DialogTitle>
             </DialogHeader>
-            {/* ✅ close the correct dialog */}
+            {/* close the correct dialog */}
             <BlockTimeForm onSuccess={() => setIsBlockOpen(false)} />
           </DialogContent>
         </Dialog>

@@ -1,4 +1,3 @@
-// components/calendar/EditForm.tsx
 "use client";
 
 import { useEffect, useMemo, useTransition } from "react";
@@ -25,7 +24,7 @@ import {
   type DeleteBookingResult,
 } from "@/app/(actions)/deleteBooking";
 
-// ----- helpers --------------------------------------------------------------
+// helpers
 
 function toHHmm(d: Date) {
   const h = String(d.getHours()).padStart(2, "0");
@@ -64,7 +63,7 @@ type Props = {
   onSuccess?: () => void;
 };
 
-// ----- component ------------------------------------------------------------
+
 
 export default function EditForm({ event, onSuccess }: Props) {
   const router = useRouter();
@@ -72,13 +71,13 @@ export default function EditForm({ event, onSuccess }: Props) {
 
   const isBooking = event.kind === "booking";
 
-  // Detect if this event belongs to a series
+  // check if this event belongs to a series
   const hasSeries: boolean = useMemo(() => {
     const maybeSeries = (event as any)?.seriesId;
     return !!maybeSeries;
   }, [event]);
 
-  // Build default values for the forms
+  // default values for the forms
   const defaults = useMemo(() => {
     const start = new Date(event.start);
     const end = new Date(event.end);
@@ -94,7 +93,7 @@ export default function EditForm({ event, onSuccess }: Props) {
         person: b.person ?? "",
         classType: (b.classType ?? "reformer") as "reformer" | "mat" | "duo",
         status: b.status as "paid" | "unpaid" | "hold",
-        // block-only fields (not used in booking form but kept to satisfy union defaults)
+        // block-only fields (not used in booking form but kept to satisfy defaults)
         reason: "",
         blockLength: minutesBetween(event.start, event.end),
       };
@@ -109,7 +108,7 @@ export default function EditForm({ event, onSuccess }: Props) {
       startTime: toHHmm(start),
       blockLength: mins,
       reason: blk.reason ?? "",
-      // booking-only fields (not used in block form but kept to satisfy union defaults)
+      // booking-only fields (not used in block form but kept to satisfy defaults)
       endTime: toHHmm(end),
       person: "",
       classType: "reformer" as const,
@@ -117,7 +116,7 @@ export default function EditForm({ event, onSuccess }: Props) {
     };
   }, [event, isBooking]);
 
-  // ----- React Hook Form instances -----------------------------------------
+  // React Hook Form instances 
 
   // Booking form
   const {
@@ -143,7 +142,7 @@ export default function EditForm({ event, onSuccess }: Props) {
 
   const applySeriesBlock = watchBlock("scope") === "series";
 
-  // ----- server actions with useActionState (accept FormData) ---------------
+  // server actions with useActionState (accept FormData) 
 
   const [bookingState, bookingAction] = useActionState<
     UpdateBookingResult | null,
@@ -158,7 +157,7 @@ export default function EditForm({ event, onSuccess }: Props) {
     FormData
   >(deleteBooking, null);
 
-  // On success: refresh + close
+  // Refresh and close form on success
   useEffect(() => {
     const ok = isBooking ? bookingState?.ok || deleteState?.ok : blockState?.ok;
     if (ok) {
@@ -174,7 +173,7 @@ export default function EditForm({ event, onSuccess }: Props) {
     onSuccess,
   ]);
 
-  // ----- Submit handlers ----------------------------------------------------
+  // Submit handlers 
 
   const onSubmitBooking = (values: BookingForm) => {
     const fd = new FormData();
@@ -187,10 +186,7 @@ export default function EditForm({ event, onSuccess }: Props) {
     fd.set("classType", values.classType);
     fd.set("status", values.status);
 
-    // If your server action wants the seriesId explicitly when scope === "series", uncomment:
-    // if (values.scope === "series") {
-    //   fd.set("seriesId", String((event as any)?.seriesId ?? ""));
-    // }
+
 
     startTransition(() => bookingAction(fd));
   };
@@ -204,19 +200,14 @@ export default function EditForm({ event, onSuccess }: Props) {
     fd.set("blockLength", String(values.blockLength));
     fd.set("reason", values.reason);
 
-    // If your server action wants the seriesId explicitly when scope === "series", uncomment:
-    // if (values.scope === "series") {
-    //   fd.set("seriesId", String((event as any)?.seriesId ?? ""));
-    // }
 
     startTransition(() => blockAction(fd));
   };
 
   const onDeleteBooking = () => {
-    // Respect the “Apply to series” toggle
     const scope = applySeriesBooking ? "series" : "one";
 
-    // (Optional) confirm in UI
+    // Confirms through an alert 
     if (
       !window.confirm(
         scope === "series"
@@ -234,7 +225,7 @@ export default function EditForm({ event, onSuccess }: Props) {
     startTransition(() => deleteAction(fd));
   };
 
-  // ----- UI -----------------------------------------------------------------
+  // UI
 
   if (isBooking) {
     return (

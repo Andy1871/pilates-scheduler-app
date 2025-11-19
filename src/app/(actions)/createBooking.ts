@@ -43,7 +43,7 @@ export async function createBooking(
 
   const { dateISO, startTime, endTime, person, classType, status, weeks } = parsed.data;
 
-  // First occurrence (wall-time) -> UTC
+  // First occurrence turned into UTC
   const startUTC0 = localInputToUTC(`${dateISO}T${startTime}`);
   const endUTC0 = localInputToUTC(`${dateISO}T${endTime}`);
   if (endUTC0 <= startUTC0) {

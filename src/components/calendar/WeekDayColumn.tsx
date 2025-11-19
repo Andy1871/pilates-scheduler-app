@@ -1,4 +1,3 @@
-// components/calendar/WeekDayColumn.tsx
 "use client";
 
 import * as React from "react";
@@ -12,10 +11,10 @@ type Props = {
   isToday?: boolean;
   bookings: BookingEvent[];
   blocks: BlockEvent[];
-  startHour: number;   // e.g. 7
-  endHour: number;     // e.g. 21
-  slotMinutes: number; // e.g. 30
-  /** Called when a chip is clicked */
+  startHour: number;   
+  endHour: number;      
+  slotMinutes: number; 
+
   onOpenEvent?: (id: string) => void;
 };
 
@@ -112,7 +111,6 @@ export default function WeekDayColumn({
                 title={title}
                 timeLabel={timeLabel}
                 classType={classType}
-                // If your EventChip type doesn't include "blocked", this cast is fine.
                 status={status as any}
                 view="week"
                 className="w-full h-full text-[11px] leading-tight flex flex-col"

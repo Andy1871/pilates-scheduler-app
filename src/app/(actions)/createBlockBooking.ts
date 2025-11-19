@@ -39,7 +39,7 @@ export async function createBlockBooking(
 
   const { reason, startDate, startTime, blockLength, weeks } = parsed.data;
 
-  // Build weekly occurrences at the same London wall-time, convert each to UTC
+  // Build weekly occurrences at the same London time and converts each to UTC
   const occurrences = Array.from({ length: weeks }, (_, i) => {
     const dateISO = addDaysISO(startDate, i * 7);
     const startUTC = localInputToUTC(`${dateISO}T${startTime}`);

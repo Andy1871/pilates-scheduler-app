@@ -1,3 +1,5 @@
+// File helps take CalendarEvent and turn it into an event 'chip' in the UI.
+
 import { format } from "date-fns";
 import type { CalendarEvent, BookingEvent, BlockEvent } from "@/types/event";
 import { CLASS_LABEL } from "@/lib/display";
@@ -6,7 +8,7 @@ type ChipData = {
   timeLabel: string;
   title: string;
   classType?: string;
-  // Allow both booking statuses and the block status
+  // CalendarEvent that was created in types folder - helps us created our displays below.
   status: CalendarEvent["status"] | "blocked";
 };
 
@@ -15,15 +17,15 @@ export function presentEventForChip(ev: CalendarEvent): ChipData {
   const e = new Date(ev.end);
   const timeLabel = `${format(s, "HH:mm")}–${format(e, "HH:mm")}`;
 
+  // Book
   if (ev.kind === "booking") {
     const b = ev as BookingEvent;
-    // CLASS_LABEL lookup can be undefined if key is missing; guard it
-    const classPretty = b.classType ? CLASS_LABEL[b.classType] : undefined;
+    const classPretty = b.classType ? CLASS_LABEL[b.classType] : undefined; // selects correct label based on value of b.classType
     return {
       timeLabel,
       title: b.person || "Booking",
       classType: classPretty,
-      status: b.status, // "paid" | "unpaid" | "hold"
+      status: b.status, // paid/unpaid/hold
     };
   }
 

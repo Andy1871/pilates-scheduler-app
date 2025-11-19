@@ -1,10 +1,10 @@
 import { cva, type VariantProps } from "class-variance-authority";
 
-/** Base classes for chip-like event UI */
+// Base classes for the event chips
 export const CHIP_BASE =
   "w-full truncate rounded-md border px-2 leading-5 text-xs";
 
-/** Shared status styles so Chip and future Block stay consistent */
+  // Shared styles so chip and block stay consistent 
 export const STATUS_CLASSES = {
   paid: "bg-green-100 text-green-800 border-green-300",
   unpaid: "bg-yellow-100 text-yellow-800 border-yellow-300",
@@ -14,7 +14,7 @@ export const STATUS_CLASSES = {
 
 export type StatusKey = keyof typeof STATUS_CLASSES;
 
-/** Chip variants (status + view sizing + selected ring) */
+
 export const chipVariants = cva(CHIP_BASE, {
   variants: {
     status: STATUS_CLASSES,

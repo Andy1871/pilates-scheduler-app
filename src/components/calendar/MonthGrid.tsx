@@ -1,4 +1,3 @@
-// components/calendar/MonthGrid.tsx
 "use client";
 
 import * as React from "react";
@@ -7,9 +6,9 @@ import MonthDayCell from "./MonthDayCell";
 import type { CalendarEvent } from "@/types/event";
 
 export type DayModel = {
-  dateISO: string;        // key + label
-  isCurrentMonth: boolean; // mute out-of-month dates
-  isToday: boolean;        // highlight today
+  dateISO: string;        
+  isCurrentMonth: boolean; 
+  isToday: boolean;        
 };
 
 type Props = {

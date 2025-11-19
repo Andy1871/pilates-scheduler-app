@@ -75,10 +75,7 @@ model Event {
   @@index([userId])
 }
 
-/// *
-/// * =======================
-/// * Your existing enums
-/// * =======================
+
 enum Status {
   paid
   unpaid

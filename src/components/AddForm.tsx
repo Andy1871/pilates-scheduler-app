@@ -25,7 +25,7 @@ import { Button } from "./ui/button";
 type FormValues = z.infer<typeof AddBookingSchema>;
 type ActionState = CreateBookingResult | null;
 
-// Helper to add minutes to HH:mm
+// Helper to add minutes to HH:mm - computes endTime from starTime + classLength
 function addMinutesToHHmm(hhmm: string, minutes: number): string {
   const [h, m] = hhmm.split(":").map((n) => parseInt(n, 10));
   const total = h * 60 + m + minutes;
@@ -38,6 +38,7 @@ export default function AddForm({ onSuccess }: { onSuccess?: () => void }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
+  // useMemo so values just show up on first render - important for reset
   const defaultValues = useMemo<DefaultValues<FormValues>>(
     () => ({
       name: "",
@@ -62,26 +63,27 @@ export default function AddForm({ onSuccess }: { onSuccess?: () => void }) {
     defaultValues,
   });
 
-  // Server Action state (React 19 API)
+  // useActionState connects component to createBooking server action.
+  // actionState holds result from server action, formAction is function called with FormData
   const [actionState, formAction] = useActionState<ActionState, FormData>(
     createBooking,
     null
   );
 
-  // Reset + refresh after success
+  // Reset & refresh after success. actionState.ok = when result from server action is successful.
   useEffect(() => {
     if (actionState?.ok) {
       reset(defaultValues);
-      router.refresh();
+      router.refresh(); // getEventsInRange will be rerun, and new booking gets shown in calendar.
       onSuccess?.()
     }
   }, [actionState?.ok, reset, defaultValues, router, onSuccess]);
 
-  // Handle manual form submission
+  // Handle manual form submission - DB relevant data is created. 
   const onSubmit = (values: FormValues) => {
     const fd = new FormData();
     const startTime = values.startTime || "09:00";
-    const endTime = addMinutesToHHmm(startTime, values.classLength || 55);
+    const endTime = addMinutesToHHmm(startTime, values.classLength || 55); // uses helper from above 
 
     fd.set("dateISO", values.startDate);
     fd.set("startTime", startTime);

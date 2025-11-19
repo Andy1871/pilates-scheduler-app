@@ -1,4 +1,3 @@
-// components/calendar/MonthDayCell.tsx
 "use client";
 
 import * as React from "react";
@@ -98,5 +97,5 @@ function MonthDayCellBase({
   );
 }
 
-const MonthDayCell = React.memo(MonthDayCellBase);
+const MonthDayCell = React.memo(MonthDayCellBase); // avoid re-rendering when props don't change. Important for calendar grids
 export default MonthDayCell;

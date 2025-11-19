@@ -12,15 +12,15 @@ type BaseEvent = {
 
 export type BookingEvent = BaseEvent & {
   kind: "booking";
-  status: Exclude<EventStatus, "blocked">; // "paid" | "unpaid" | "hold"
-  person: string;       // client name
-  classType: ClassType; // reformer/mat/duo
+  status: Exclude<EventStatus, "blocked">; 
+  person: string;       
+  classType: ClassType; 
 };
 
 export type BlockEvent = BaseEvent & {
   kind: "block";
   status: "blocked";
-  reason: string;       // why the time is blocked
+  reason: string;       
 };
 
 export type CalendarEvent = BookingEvent | BlockEvent;

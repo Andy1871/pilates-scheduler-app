@@ -94,7 +94,8 @@ export async function updateBooking(
     return { ok: true, updated: 1 };
   }
 
-  // Series — shift in UTC by delta
+  // Series  shift in UTC 
+
   const deltaMs = newStart.getTime() - base.start.getTime();
   const durationMs = newEnd.getTime() - newStart.getTime();
 
@@ -110,6 +111,8 @@ export async function updateBooking(
     const e = new Date(s.getTime() + durationMs);
     return { id: ev.id, start: s, end: e };
   });
+
+  // Current issue to fix above: if a user changes an individual booking, then goes in later to change a whole series, the times can be off, as they change the same duration rather than to a specific time. 
 
   for (const u of updates) {
     const overlap = await prisma.event.findFirst({
