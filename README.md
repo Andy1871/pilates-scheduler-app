@@ -40,14 +40,3 @@ Manage sessions, clients, and time blocks all in one intuitive weekly and monthl
 
 ---
 
-## Folder Structure
-
-```
-app/ 
-      (actions)/ # Server actions for CRUD operations on bookings and blocks
-      (root)/ # Day and Week pages
-      signin/ # Signin page
-components/ # UI components
-lib/ # Utils, date helpers, prisma queries & validation schemas
-```
-
