@@ -75,15 +75,15 @@ export default function AddForm({ onSuccess }: { onSuccess?: () => void }) {
     if (actionState?.ok) {
       reset(defaultValues);
       router.refresh(); // getEventsInRange will be rerun, and new booking gets shown in calendar.
-      onSuccess?.()
+      onSuccess?.();
     }
   }, [actionState?.ok, reset, defaultValues, router, onSuccess]);
 
-  // Handle manual form submission - DB relevant data is created. 
+  // Handle manual form submission - DB relevant data is created.
   const onSubmit = (values: FormValues) => {
     const fd = new FormData();
     const startTime = values.startTime || "09:00";
-    const endTime = addMinutesToHHmm(startTime, values.classLength || 55); // uses helper from above 
+    const endTime = addMinutesToHHmm(startTime, values.classLength || 55); // uses helper from above
 
     fd.set("dateISO", values.startDate);
     fd.set("startTime", startTime);
@@ -92,7 +92,6 @@ export default function AddForm({ onSuccess }: { onSuccess?: () => void }) {
     fd.set("classType", values.class);
     fd.set("status", values.status);
     fd.set("weeks", String(values.weeks));
-
 
     startTransition(() => {
       formAction(fd);
@@ -205,9 +204,6 @@ export default function AddForm({ onSuccess }: { onSuccess?: () => void }) {
           {errors.weeks && (
             <p className="text-red-600">{errors.weeks.message}</p>
           )}
-          <p className="text-xs text-muted-foreground mt-1">
-            (Currently creates one booking; recurrence coming soon.)
-          </p>
         </div>
 
         <div className="md:col-span-6 md:col-start-7">
