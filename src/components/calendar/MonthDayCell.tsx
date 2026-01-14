@@ -53,7 +53,10 @@ function MonthDayCellBase({
       data-date={dateISO}
       role="gridcell"
       aria-selected={selected || false}
-      onClick={() => {onSelectDay?.(dateISO); onCreateBooking?.(dateISO);}}
+      onClick={() => {
+        onSelectDay?.(dateISO);
+        onCreateBooking?.(dateISO);
+      }}
     >
       <div className="flex items-center justify-between">
         <span className="sr-only">{dateISO}</span>
@@ -76,9 +79,12 @@ function MonthDayCellBase({
               status={presented.status}
               view="month"
               title={presented.title}
-              timeLabel={presented.timeLabel}
+              timeLabel={presented.timeStart}
               classType={presented.classType}
-              onClick={(e) => {e.stopPropagation(); onOpenEvent?.(ev.id);}}
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenEvent?.(ev.id);
+              }}
             />
           );
         })}

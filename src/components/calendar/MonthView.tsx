@@ -7,7 +7,7 @@ import MonthGrid, { type DayModel } from "./MonthGrid";
 import CalendarHeader from "./CalendarHeader";
 import AddForm from "../AddForm";
 import BlockTimeForm from "../BlockTimeForm";
-import EditForm from "../EditForm"; 
+import EditForm from "../EditForm";
 
 import {
   Dialog,
@@ -28,13 +28,13 @@ import { formatInTZ } from "@/lib/date-utils";
 import type { CalendarEvent } from "@/types/event";
 
 type Props = {
-  visibleStart: string; // ISO for the first visible grid day (Mon of first row)
-  visibleEnd: string;   // ISO for the last visible grid day (Sun of last row)
+  visibleStart: string;
+  visibleEnd: string;
   events: CalendarEvent[];
 };
 
 export function buildMonthMatrix(viewDate: Date): DayModel[] {
-  const start = startOfWeek(startOfMonth(viewDate), { weekStartsOn: 1 }); // local TZ
+  const start = startOfWeek(startOfMonth(viewDate), { weekStartsOn: 1 });
   const todayISO = format(new Date(), "yyyy-MM-dd");
   const viewMonthKey = format(viewDate, "yyyy-MM");
 
@@ -65,7 +65,6 @@ export default function MonthView({ visibleStart, visibleEnd, events }: Props) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Find the reference month from the midpoint of the visible grid
   const viewDate = useMemo(() => {
     const start = new Date(visibleStart);
     const end = new Date(visibleEnd);
@@ -76,18 +75,18 @@ export default function MonthView({ visibleStart, visibleEnd, events }: Props) {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isBlockOpen, setIsBlockOpen] = useState(false);
 
-  
+  // ✅ NEW: store default datetime for AddForm
+  const [addStartISO, setAddStartISO] = useState<string | null>(null);
+
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedEvent = useMemo(
     () => events.find((e) => e.id === selectedId) ?? null,
     [selectedId, events]
   );
 
-
   const days = useMemo(() => buildMonthMatrix(viewDate), [viewDate]);
   const eventsByDate = useMemo(() => groupEventsByDate(events), [events]);
 
-  // set router params to month info 
   const pushMonth = (d: Date) => {
     const monthParam = format(startOfMonth(d), "yyyy-MM-01");
     router.push(`${pathname}?month=${monthParam}`);
@@ -100,7 +99,11 @@ export default function MonthView({ visibleStart, visibleEnd, events }: Props) {
         onPrev={() => pushMonth(addMonths(viewDate, -1))}
         onNext={() => pushMonth(addMonths(viewDate, 1))}
         onToday={() => pushMonth(new Date())}
-        onAdd={() => setIsAddOpen(true)}
+        onAdd={() => {
+          setSelectedId(null);
+          setAddStartISO(null); // manual add = blank
+          setIsAddOpen(true);
+        }}
         onBlock={() => setIsBlockOpen(true)}
       />
 
@@ -108,19 +111,35 @@ export default function MonthView({ visibleStart, visibleEnd, events }: Props) {
         days={days}
         eventsByDate={eventsByDate}
         className="mt-5"
-        // open edit modal when an event chip is clicked
         onOpenEvent={(id) => setSelectedId(id)}
+        // NEW: click empty cell to create booking
+        onCreateBooking={(dateISO) => {
+          setSelectedId(null);
+          // default month click time:
+          setAddStartISO(new Date(`${dateISO}T09:00:00`).toISOString());
+          setIsAddOpen(true);
+        }}
       />
 
       {isAddOpen && (
-        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <Dialog
+          open={isAddOpen}
+          onOpenChange={(open) => {
+            setIsAddOpen(open);
+            if (!open) setAddStartISO(null);
+          }}
+        >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="flex justify-center">
-                Add Booking
-              </DialogTitle>
+              <DialogTitle className="flex justify-center">Add Booking</DialogTitle>
             </DialogHeader>
-            <AddForm onSuccess={() => setIsAddOpen(false)} />
+            <AddForm
+              defaultStartISO={addStartISO ?? undefined}
+              onSuccess={() => {
+                setIsAddOpen(false);
+                setAddStartISO(null);
+              }}
+            />
           </DialogContent>
         </Dialog>
       )}
@@ -129,16 +148,13 @@ export default function MonthView({ visibleStart, visibleEnd, events }: Props) {
         <Dialog open={isBlockOpen} onOpenChange={setIsBlockOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="flex justify-center">
-                Block Time Out
-              </DialogTitle>
+              <DialogTitle className="flex justify-center">Block Time Out</DialogTitle>
             </DialogHeader>
             <BlockTimeForm onSuccess={() => setIsBlockOpen(false)} />
           </DialogContent>
         </Dialog>
       )}
 
-      {/* Edit dialog */}
       {selectedEvent && (
         <Dialog
           open={!!selectedEvent}
@@ -150,10 +166,7 @@ export default function MonthView({ visibleStart, visibleEnd, events }: Props) {
                 Edit {selectedEvent.kind === "booking" ? "Booking" : "Blocked Time"}
               </DialogTitle>
             </DialogHeader>
-            <EditForm
-              event={selectedEvent}
-              onSuccess={() => setSelectedId(null)}
-            />
+            <EditForm event={selectedEvent} onSuccess={() => setSelectedId(null)} />
           </DialogContent>
         </Dialog>
       )}

@@ -81,10 +81,10 @@ export default function EventContent({
         </>
       ) : (
         <>
+          <span className="font-medium">{title}</span>
           {timeLabel && (
             <span className="text-2xs opacity-70">{timeLabel}</span>
           )}
-          <span className="font-medium">{title}</span>
           {classType && (
             <span className="text-2xs italic opacity-80">{classType}</span>
           )}

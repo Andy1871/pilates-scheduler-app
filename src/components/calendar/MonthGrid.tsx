@@ -20,6 +20,7 @@ type Props = {
   onOpenEvent?: (id: string) => void;
   onOpenMore?: (dateISO: string) => void;
   onSelectDay?: (dateISO: string) => void;
+  onCreateBooking?: (dateISO: string) => void;
 };
 
 const WEEKDAYS_MON_FIRST = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -32,6 +33,7 @@ export default function MonthGrid({
   onOpenEvent,
   onOpenMore,
   onSelectDay,
+  onCreateBooking,
 }: Props) {
   if (process.env.NODE_ENV !== "production" && days.length !== 42) {
     console.warn(`MonthGrid expected 42 days, received ${days.length}.`);
@@ -71,6 +73,7 @@ export default function MonthGrid({
             onOpenEvent={onOpenEvent}
             onOpenMore={onOpenMore}
             onSelectDay={onSelectDay}
+            onCreateBooking={onCreateBooking}
             className="bg-background"
           />
         ))}

@@ -128,7 +128,7 @@ export default function WeekDayColumn({
       />
 
       {/* Events overlay (must stay on top) */}
-      <div className="absolute inset-0 p-1">
+      <div className="absolute inset-0 p-1 pointer-events-none">
         {events.map((ev) => {
           const { top, height } = getEventBounds(ev, startHour, endHour);
           const { timeLabel, title, classType, status } = presentEventForChip(ev);
@@ -136,7 +136,7 @@ export default function WeekDayColumn({
           return (
             <div
               key={ev.id}
-              className="absolute left-1 right-1 cursor-pointer select-none"
+              className="absolute left-1 right-1 cursor-pointer select-none pointer-events-auto"
               style={{ top, height }}
               title={title}
               aria-label={`${title} ${timeLabel}`}
