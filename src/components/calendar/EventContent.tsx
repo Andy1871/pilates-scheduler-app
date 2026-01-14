@@ -29,8 +29,14 @@ export function buildEventLabel(opts: {
   const { title, timeLabel, classType, view } = opts;
 
   // Month view stays compact, week can include time and classType
-  if (view === "month" || !timeLabel) {
+  if (!timeLabel) {
     return classType ? `${title} — ${classType}` : title;
+  }
+
+  if (view === "month") {
+    return classType
+      ? `${timeLabel} ${title} — ${classType}`
+      : `${timeLabel} ${title}`;
   }
 
   return classType
@@ -50,17 +56,22 @@ export default function EventContent({
 
   // stack lines for week, truncate for month
   const containerClass = isMonth
-    ? "flex h-5 items-center gap-1 truncate text-[11px] leading-4"
+    ? "flex w-full h-5 items-center gap-1 sm:gap-1.5 min-w-0 text-[11px] leading-4"
     : "flex h-full flex-col justify-center items-center whitespace-normal break-words";
 
   return (
     <span className={cn(containerClass, className)}>
       {isMonth ? (
         <>
-          <span className="truncate">{title}</span>
+          {timeLabel && (
+            <span className="shrink-0 tabular-nums text-[10px] sm:text-[11px] opacity-70">
+              {timeLabel}
+            </span>
+          )}
+          <span className="min-w-0 flex-1 truncate">{title}</span>
           {abbr && (
             <span
-              className="ml-auto inline-flex items-center justify-center rounded-sm border px-1 text-[10px] leading-none opacity-80"
+              className="ml-auto inline-flex shrink-0 items-center justify-center rounded-sm border px-0.5 sm:px-1 text-[10px] leading-none opacity-80"
               aria-hidden
               title={classType}
             >

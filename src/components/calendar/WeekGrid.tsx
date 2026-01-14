@@ -15,6 +15,7 @@ type Props = {
   bookingByWeekDay?: Record<string, BookingEvent[]>;
   blockByWeekDay?: Record<string, BlockEvent[]>;
   onOpenEvent?: (id: string) => void;
+  onCreateBooking?: (startISO: string) => void; 
 };
 
 const TIME_LABELS = (startHour: number, endHour: number) =>
@@ -37,6 +38,7 @@ export default function WeekGrid({
   bookingByWeekDay,
   blockByWeekDay,
   onOpenEvent,
+  onCreateBooking,
   className,
   startHour = 6,
   endHour = 22,
@@ -101,6 +103,7 @@ export default function WeekGrid({
               endHour={endHour}
               slotMinutes={slotMinutes}
               onOpenEvent={onOpenEvent}
+              onCreateBooking={onCreateBooking}
             />
           );
         })}

@@ -9,7 +9,7 @@ type Props = {
   status: "paid" | "unpaid" | "blocked" | "hold";
   selected?: boolean;
   className?: string;
-  onClick?: () => void;
+  onClick?: (e:React.MouseEvent<HTMLButtonElement>) => void;
 } & ChipVariantProps;
 
 export default function EventChip({

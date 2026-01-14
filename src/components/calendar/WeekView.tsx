@@ -43,7 +43,6 @@ export function buildWeekMatrix(viewDate: Date): WeekDayModel[] {
   });
 }
 
-// group bookings/blocks by day key "yyyy-MM-dd"
 export function groupEventsByWeekDay<T extends { start: string }>(
   list: T[]
 ): Record<string, T[]> {
@@ -58,7 +57,6 @@ export function groupEventsByWeekDay<T extends { start: string }>(
 export default function WeekView({ start, end, events }: Props) {
   const router = useRouter();
 
-  // UI comes from server provided start so data and view are in sync
   const viewDate = useMemo(
     () => startOfWeek(new Date(start), { weekStartsOn: 1 }),
     [start]
@@ -67,12 +65,12 @@ export default function WeekView({ start, end, events }: Props) {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isBlockOpen, setIsBlockOpen] = useState(false);
 
+  // ✅ NEW
+  const [addStartISO, setAddStartISO] = useState<string | null>(null);
+
   const days = buildWeekMatrix(viewDate);
   const headerTitle = getWeekRangeLabel(viewDate);
-  const weekKey = format(
-    startOfWeek(viewDate, { weekStartsOn: 1 }),
-    "yyyy-MM-dd"
-  );
+  const weekKey = format(startOfWeek(viewDate, { weekStartsOn: 1 }), "yyyy-MM-dd");
 
   const go = (d: Date) => {
     const monday = startOfWeek(d, { weekStartsOn: 1 });
@@ -113,7 +111,11 @@ export default function WeekView({ start, end, events }: Props) {
         onPrev={() => go(addWeeks(viewDate, -1))}
         onNext={() => go(addWeeks(viewDate, 1))}
         onToday={() => go(new Date())}
-        onAdd={() => setIsAddOpen(true)}
+        onAdd={() => {
+          setSelectedId(null);
+          setAddStartISO(null);   // manual add = blank date/time
+          setIsAddOpen(true);
+        }}
         onBlock={() => setIsBlockOpen(true)}
       />
 
@@ -127,17 +129,33 @@ export default function WeekView({ start, end, events }: Props) {
         endHour={21}
         slotMinutes={30}
         onOpenEvent={(id) => setSelectedId(id)}
+        onCreateBooking={(startISO) => {
+          setSelectedId(null);
+          setAddStartISO(startISO);
+          setIsAddOpen(true);
+        }}
       />
 
       {isAddOpen && (
-        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <Dialog
+          open={isAddOpen}
+          onOpenChange={(open) => {
+            setIsAddOpen(open);
+            if (!open) setAddStartISO(null);
+          }}
+        >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="flex justify-center">
-                Add Booking
-              </DialogTitle>
+              <DialogTitle className="flex justify-center">Add Booking</DialogTitle>
             </DialogHeader>
-            <AddForm onSuccess={() => setIsAddOpen(false)} />
+
+            <AddForm
+              defaultStartISO={addStartISO ?? undefined}
+              onSuccess={() => {
+                setIsAddOpen(false);
+                setAddStartISO(null);
+              }}
+            />
           </DialogContent>
         </Dialog>
       )}
@@ -146,11 +164,8 @@ export default function WeekView({ start, end, events }: Props) {
         <Dialog open={isBlockOpen} onOpenChange={setIsBlockOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="flex justify-center">
-                Block Time Out
-              </DialogTitle>
+              <DialogTitle className="flex justify-center">Block Time Out</DialogTitle>
             </DialogHeader>
-            {/* close the correct dialog */}
             <BlockTimeForm onSuccess={() => setIsBlockOpen(false)} />
           </DialogContent>
         </Dialog>
@@ -164,14 +179,10 @@ export default function WeekView({ start, end, events }: Props) {
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="flex justify-center">
-                Edit{" "}
-                {selectedEvent.kind === "booking" ? "Booking" : "Blocked Time"}
+                Edit {selectedEvent.kind === "booking" ? "Booking" : "Blocked Time"}
               </DialogTitle>
             </DialogHeader>
-            <EditForm
-              event={selectedEvent}
-              onSuccess={() => setSelectedId(null)}
-            />
+            <EditForm event={selectedEvent} onSuccess={() => setSelectedId(null)} />
           </DialogContent>
         </Dialog>
       )}

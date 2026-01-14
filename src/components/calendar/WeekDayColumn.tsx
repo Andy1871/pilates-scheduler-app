@@ -11,16 +11,17 @@ type Props = {
   isToday?: boolean;
   bookings: BookingEvent[];
   blocks: BlockEvent[];
-  startHour: number;   
-  endHour: number;      
-  slotMinutes: number; 
+  startHour: number;
+  endHour: number;
+  slotMinutes: number;
 
   onOpenEvent?: (id: string) => void;
+  onCreateBooking?: (startISO: string) => void; // ✅ NEW
 };
 
-const HOUR_PX = 64;            // each hour == 64px (because 30-min slot is h-8 = 32px)
+const HOUR_PX = 64; // each hour == 64px (because 30-min slot is h-8 = 32px)
 const PX_PER_MIN = HOUR_PX / 60;
-const MIN_HEIGHT_PX = 18;      // ensure chip text remains readable
+const MIN_HEIGHT_PX = 18;
 
 function minutesFromStart(date: Date, startHour: number) {
   return (date.getHours() - startHour) * 60 + date.getMinutes();
@@ -44,6 +45,17 @@ function getEventBounds(ev: CalendarEvent, startHour: number, endHour: number) {
   };
 }
 
+/**
+ * Builds an ISO datetime for this column date at a given minute offset from startHour.
+ * Uses local time (consistent with Date + getHours() logic you're already using).
+ */
+function buildSlotStartISO(dateISO: string, startHour: number, minutesFromStart: number) {
+  const d = new Date(dateISO); // should be midnight for that day in your current setup
+  d.setHours(startHour, 0, 0, 0);
+  d.setMinutes(d.getMinutes() + minutesFromStart);
+  return d.toISOString();
+}
+
 export default function WeekDayColumn({
   dateISO,
   isToday,
@@ -53,16 +65,36 @@ export default function WeekDayColumn({
   endHour,
   slotMinutes,
   onOpenEvent,
+  onCreateBooking,
 }: Props) {
   const slotsPerHour = 60 / slotMinutes;
   const totalHours = endHour - startHour;
   const totalSlots = totalHours * slotsPerHour;
+  const totalMinutes = totalHours * 60;
 
   // merge for rendering; keep order by start time
   const events: CalendarEvent[] = React.useMemo(() => {
     const all = [...bookings, ...blocks];
     return all.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
   }, [bookings, blocks]);
+
+  const handleCreateAtPointer = React.useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!onCreateBooking) return;
+
+      const rect = e.currentTarget.getBoundingClientRect();
+      const y = e.clientY - rect.top;
+
+      // convert y px -> minutes from startHour, then snap to nearest slotMinutes
+      const rawMinutes = y / PX_PER_MIN;
+      const clamped = Math.max(0, Math.min(totalMinutes - 1, rawMinutes));
+      const snapped = Math.round(clamped / slotMinutes) * slotMinutes;
+
+      const startISO = buildSlotStartISO(dateISO, startHour, snapped);
+      onCreateBooking(startISO);
+    },
+    [onCreateBooking, dateISO, startHour, slotMinutes, totalMinutes]
+  );
 
   return (
     <div
@@ -74,7 +106,7 @@ export default function WeekDayColumn({
       data-date={dateISO}
       aria-selected={isToday || false}
     >
-      {/* Background time grid */}
+      {/* Background time grid (visual only) */}
       <div className="pointer-events-none">
         {Array.from({ length: totalSlots }, (_, i) => (
           <div
@@ -84,7 +116,18 @@ export default function WeekDayColumn({
         ))}
       </div>
 
-      {/* Events overlay */}
+      {/* ✅ Clickable hit-layer for empty time slots */}
+      <div
+        className="absolute inset-0 cursor-pointer"
+        onClick={handleCreateAtPointer}
+        // optional polish
+        onMouseMove={(e) => {
+          // you could add hover effects later if you want
+        }}
+        aria-label={`Create booking on ${dateISO}`}
+      />
+
+      {/* Events overlay (must stay on top) */}
       <div className="absolute inset-0 p-1">
         {events.map((ev) => {
           const { top, height } = getEventBounds(ev, startHour, endHour);
@@ -99,7 +142,10 @@ export default function WeekDayColumn({
               aria-label={`${title} ${timeLabel}`}
               role="button"
               tabIndex={0}
-              onClick={() => onOpenEvent?.(ev.id)}
+              onClick={(e) => {
+                e.stopPropagation(); // ✅ prevent slot create
+                onOpenEvent?.(ev.id);
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();

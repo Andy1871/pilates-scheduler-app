@@ -17,6 +17,7 @@ type Props = {
   onOpenMore?: (dateISO: string) => void;
   onSelectDay?: (dateISO: string) => void;
   className?: string;
+  onCreateBooking?: (dateISO: string) => void;
 };
 
 function MonthDayCellBase({
@@ -30,6 +31,7 @@ function MonthDayCellBase({
   onOpenMore,
   onSelectDay,
   className,
+  onCreateBooking,
 }: Props) {
   const dayNum = React.useMemo(
     () => parseInt(dateISO.slice(8, 10), 10),
@@ -42,7 +44,7 @@ function MonthDayCellBase({
   return (
     <div
       className={cn(
-        "relative h-full min-h-24 border p-1.5 flex flex-col",
+        "relative h-full min-h-24 border p-0.5 xs:p-1 sm:p-1.5 flex flex-col",
         !isCurrentMonth && "bg-muted/20 text-muted-foreground",
         isToday && "outline outline-sky-300 -outline-offset-1 bg-sky-50/40",
         selected && "outline outline-primary/40",
@@ -51,7 +53,7 @@ function MonthDayCellBase({
       data-date={dateISO}
       role="gridcell"
       aria-selected={selected || false}
-      onClick={() => onSelectDay?.(dateISO)}
+      onClick={() => {onSelectDay?.(dateISO); onCreateBooking?.(dateISO);}}
     >
       <div className="flex items-center justify-between">
         <span className="sr-only">{dateISO}</span>
@@ -74,8 +76,9 @@ function MonthDayCellBase({
               status={presented.status}
               view="month"
               title={presented.title}
+              timeLabel={presented.timeLabel}
               classType={presented.classType}
-              onClick={() => onOpenEvent?.(ev.id)}
+              onClick={(e) => {e.stopPropagation(); onOpenEvent?.(ev.id);}}
             />
           );
         })}
