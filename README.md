@@ -3,7 +3,7 @@
 A **Next.js calendar scheduling app** built for self-employed Pilates professionals.  
 Manage sessions, clients, and time blocks all in one intuitive weekly and monthly view.
 
-**Live Demo:** [pilates-scheduler.vercel.app](https://pilates-scheduler.vercel.app/) - Free, secure login via Google 
+**Live Demo:** [pilates-scheduler.vercel.app](https://pilates-scheduler.vercel.app/) - Free, secure login via Google. Images of app below if preferred 
 
 ![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
