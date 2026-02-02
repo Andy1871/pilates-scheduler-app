@@ -40,3 +40,22 @@ Manage sessions, clients, and time blocks all in one intuitive weekly and monthl
 
 ---
 
+## Images
+
+**Month View**
+
+<img width="1121" height="754" alt="Pilates - Month View" src="https://github.com/user-attachments/assets/a8da3563-5bb7-41a0-8995-7d72d1c29d38" />
+
+
+**Week View**
+
+<img width="1118" height="804" alt="Pilates - Week View" src="https://github.com/user-attachments/assets/1c901e3f-5b80-407d-b286-70ef911e08be" />
+
+
+**Add Booking Form**
+
+<img width="485" height="453" alt="Pilates Add Booking" src="https://github.com/user-attachments/assets/e5b8d697-e7af-4110-b2bf-10f47527ea74" />
+
+
+
+
