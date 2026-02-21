@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useEffect, useTransition } from "react";
+import { Loader2 } from "lucide-react";
 import { useForm, Controller, type DefaultValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AddBookingSchema } from "@/lib/validation";
@@ -273,6 +274,7 @@ export default function AddForm({ onSuccess, defaultStartISO }: AddFormProps) {
 
       <div className="flex justify-center mt-4">
         <Button type="submit" disabled={isSubmitting || isPending}>
+          {(isSubmitting || isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isSubmitting || isPending ? "Saving..." : "Save Booking"}
         </Button>
       </div>

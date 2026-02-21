@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useTransition } from "react";
+import { Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
@@ -354,6 +355,7 @@ export default function EditForm({ event, onSuccess }: Props) {
 
         <div className="flex items-center justify-between">
           <Button type="submit" disabled={isPending}>
+            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isPending ? "Saving..." : "Save"}
           </Button>
 
@@ -363,6 +365,7 @@ export default function EditForm({ event, onSuccess }: Props) {
             onClick={onDeleteBooking}
             disabled={isPending}
           >
+            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isPending
               ? "Deleting..."
               : applySeriesBooking
@@ -463,6 +466,7 @@ export default function EditForm({ event, onSuccess }: Props) {
       )}
 
       <Button type="submit" disabled={isPending}>
+        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         {isPending ? "Saving..." : "Save"}
       </Button>
     </form>

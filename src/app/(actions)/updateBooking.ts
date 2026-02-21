@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { localInputToUTC } from "@/lib/date-utils";
+import { localInputToUTC, formatInTZ } from "@/lib/date-utils";
 
 export type UpdateBookingResult =
   | { ok: true; updated: number }
@@ -27,7 +27,7 @@ export async function updateBooking(
 ): Promise<UpdateBookingResult> {
   const session = await auth();
   if (!session?.user) return { ok: false, error: { _form: ["Not authenticated"] } };
-  const userId = (session.user as any).id as string;
+  const userId = session.user.id;
 
   const raw = Object.fromEntries(formData.entries());
   const parsed = Payload.safeParse({
@@ -94,9 +94,10 @@ export async function updateBooking(
     return { ok: true, updated: 1 };
   }
 
-  // Series  shift in UTC 
+  // Series — apply the same London clock time to every event on its own original date.
+  // Using absolute time (not a delta) means individually-edited events in the series
+  // all end up at the same time, with no drift.
 
-  const deltaMs = newStart.getTime() - base.start.getTime();
   const durationMs = newEnd.getTime() - newStart.getTime();
 
   const seriesEvents = await prisma.event.findMany({
@@ -107,31 +108,32 @@ export async function updateBooking(
   const seriesIds = seriesEvents.map((e) => e.id);
 
   const updates = seriesEvents.map((ev) => {
-    const s = new Date(ev.start.getTime() + deltaMs);
+    const evDateISO = formatInTZ(ev.start, "yyyy-MM-dd");
+    const s = localInputToUTC(`${evDateISO}T${startTime}`);
     const e = new Date(s.getTime() + durationMs);
     return { id: ev.id, start: s, end: e };
   });
 
-  // Current issue to fix above: if a user changes an individual booking, then goes in later to change a whole series, the times can be off, as they change the same duration rather than to a specific time. 
-
-  for (const u of updates) {
-    const overlap = await prisma.event.findFirst({
-      where: {
-        userId,
-        id: { notIn: seriesIds },
-        kind: "booking",
-        start: { lt: u.end },
-        end: { gt: u.start },
-      },
-      select: { id: true },
-    });
-    const blockOverlap = await prisma.event.findFirst({
-      where: { userId, kind: "block", start: { lt: u.end }, end: { gt: u.start } },
-      select: { id: true },
-    });
-    if (overlap || blockOverlap) {
-      return { ok: false, error: { _form: ["Series update conflicts with existing event(s)"] } };
-    }
+  // Single OR query across all update ranges — replaces the N+1 loop
+  const overlapBooking = await prisma.event.findFirst({
+    where: {
+      userId,
+      id: { notIn: seriesIds },
+      kind: "booking",
+      OR: updates.map((u) => ({ start: { lt: u.end }, end: { gt: u.start } })),
+    },
+    select: { id: true },
+  });
+  const blockOverlap = await prisma.event.findFirst({
+    where: {
+      userId,
+      kind: "block",
+      OR: updates.map((u) => ({ start: { lt: u.end }, end: { gt: u.start } })),
+    },
+    select: { id: true },
+  });
+  if (overlapBooking || blockOverlap) {
+    return { ok: false, error: { _form: ["Series update conflicts with existing event(s)"] } };
   }
 
   await prisma.$transaction(async (tx) => {

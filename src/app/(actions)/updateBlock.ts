@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { localInputToUTC } from "@/lib/date-utils";
+import { localInputToUTC, formatInTZ } from "@/lib/date-utils";
 
 export type UpdateBlockResult =
   | { ok: true; updated: number }
@@ -25,7 +25,7 @@ export async function updateBlock(
 ): Promise<UpdateBlockResult> {
   const session = await auth();
   if (!session?.user) return { ok: false, error: { _form: ["Not authenticated"] } };
-  const userId = (session.user as any).id as string;
+  const userId = session.user.id;
 
   const raw = Object.fromEntries(formData.entries());
   const parsed = Payload.safeParse({
@@ -76,8 +76,7 @@ export async function updateBlock(
     return { ok: true, updated: 1 };
   }
 
-  // Series — shift by delta in UTC
-  const deltaMs = newStart.getTime() - base.start.getTime();
+  // Series — apply the same London clock time to every block on its own original date.
 
   const series = await prisma.event.findMany({
     where: { userId, seriesId: base.seriesId, kind: "block" },
@@ -85,19 +84,23 @@ export async function updateBlock(
   });
 
   const updates = series.map((ev) => {
-    const s = new Date(ev.start.getTime() + deltaMs);
+    const evDateISO = formatInTZ(ev.start, "yyyy-MM-dd");
+    const s = localInputToUTC(`${evDateISO}T${startTime}`);
     const e = new Date(s.getTime() + blockLength * 60_000);
     return { id: ev.id, start: s, end: e };
   });
 
-  for (const u of updates) {
-    const overlapBooking = await prisma.event.findFirst({
-      where: { userId, kind: "booking", start: { lt: u.end }, end: { gt: u.start } },
-      select: { id: true },
-    });
-    if (overlapBooking) {
-      return { ok: false, error: { _form: ["Series update conflicts with booking(s)"] } };
-    }
+  // Single OR query across all update ranges
+  const overlapBooking = await prisma.event.findFirst({
+    where: {
+      userId,
+      kind: "booking",
+      OR: updates.map((u) => ({ start: { lt: u.end }, end: { gt: u.start } })),
+    },
+    select: { id: true },
+  });
+  if (overlapBooking) {
+    return { ok: false, error: { _form: ["Series update conflicts with booking(s)"] } };
   }
 
   await prisma.$transaction(async (tx) => {

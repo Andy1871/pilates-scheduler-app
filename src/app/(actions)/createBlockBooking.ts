@@ -25,7 +25,7 @@ export async function createBlockBooking(
 ): Promise<CreateBlockResult> {
   const session = await auth();
   if (!session?.user) return { ok: false, error: { _form: ["Not authenticated"] } };
-  const userId = (session.user as any).id as string;
+  const userId = session.user.id;
 
   const raw = Object.fromEntries(formData.entries());
   const parsed = Payload.safeParse({

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useTransition } from "react";
+import { Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AddBlockedTimeSchema } from "@/lib/validation";
@@ -154,6 +155,7 @@ export default function BlockTimeForm({
       {/* Submit */}
       <div className="flex justify-center mt-4">
         <Button type="submit" disabled={isSubmitting || isPending}>
+          {(isSubmitting || isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isSubmitting || isPending ? "Blocking..." : "Block Time"}
         </Button>
       </div>
