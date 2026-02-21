@@ -68,7 +68,9 @@ type Props = {
 
 export default function EditForm({ event, onSuccess }: Props) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [isSavePending, startSaveTransition] = useTransition();
+  const [isDeletePending, startDeleteTransition] = useTransition();
+  const isPending = isSavePending || isDeletePending;
 
   const isBooking = event.kind === "booking";
 
@@ -189,7 +191,7 @@ export default function EditForm({ event, onSuccess }: Props) {
 
 
 
-    startTransition(() => bookingAction(fd));
+    startSaveTransition(() => bookingAction(fd));
   };
 
   const onSubmitBlock = (values: BlockForm) => {
@@ -201,14 +203,13 @@ export default function EditForm({ event, onSuccess }: Props) {
     fd.set("blockLength", String(values.blockLength));
     fd.set("reason", values.reason);
 
-
-    startTransition(() => blockAction(fd));
+    startSaveTransition(() => blockAction(fd));
   };
 
   const onDeleteBooking = () => {
     const scope = applySeriesBooking ? "series" : "one";
 
-    // Confirms through an alert 
+    // Confirms through an alert
     if (
       !window.confirm(
         scope === "series"
@@ -223,7 +224,7 @@ export default function EditForm({ event, onSuccess }: Props) {
     fd.set("id", event.id);
     fd.set("scope", scope);
 
-    startTransition(() => deleteAction(fd));
+    startDeleteTransition(() => deleteAction(fd));
   };
 
   // UI
@@ -355,8 +356,8 @@ export default function EditForm({ event, onSuccess }: Props) {
 
         <div className="flex items-center justify-between">
           <Button type="submit" disabled={isPending}>
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isPending ? "Saving..." : "Save"}
+            {isSavePending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSavePending ? "Saving..." : "Save"}
           </Button>
 
           <Button
@@ -365,8 +366,8 @@ export default function EditForm({ event, onSuccess }: Props) {
             onClick={onDeleteBooking}
             disabled={isPending}
           >
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isPending
+            {isDeletePending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isDeletePending
               ? "Deleting..."
               : applySeriesBooking
               ? "Delete series"
@@ -466,8 +467,8 @@ export default function EditForm({ event, onSuccess }: Props) {
       )}
 
       <Button type="submit" disabled={isPending}>
-        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {isPending ? "Saving..." : "Save"}
+        {isSavePending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        {isSavePending ? "Saving..." : "Save"}
       </Button>
     </form>
   );
