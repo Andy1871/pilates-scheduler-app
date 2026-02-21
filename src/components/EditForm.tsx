@@ -24,6 +24,10 @@ import {
   deleteBooking,
   type DeleteBookingResult,
 } from "@/app/(actions)/deleteBooking";
+import {
+  deleteBlock,
+  type DeleteBlockResult,
+} from "@/app/(actions)/deleteBlock";
 
 // helpers
 
@@ -159,10 +163,16 @@ export default function EditForm({ event, onSuccess }: Props) {
     DeleteBookingResult | null,
     FormData
   >(deleteBooking, null);
+  const [deleteBlockState, deleteBlockAction] = useActionState<
+    DeleteBlockResult | null,
+    FormData
+  >(deleteBlock, null);
 
   // Refresh and close form on success
   useEffect(() => {
-    const ok = isBooking ? bookingState?.ok || deleteState?.ok : blockState?.ok;
+    const ok = isBooking
+      ? bookingState?.ok || deleteState?.ok
+      : blockState?.ok || deleteBlockState?.ok;
     if (ok) {
       router.refresh();
       onSuccess?.();
@@ -171,6 +181,7 @@ export default function EditForm({ event, onSuccess }: Props) {
     bookingState?.ok,
     deleteState?.ok,
     blockState?.ok,
+    deleteBlockState?.ok,
     isBooking,
     router,
     onSuccess,
@@ -225,6 +236,26 @@ export default function EditForm({ event, onSuccess }: Props) {
     fd.set("scope", scope);
 
     startDeleteTransition(() => deleteAction(fd));
+  };
+
+  const onDeleteBlock = () => {
+    const scope = applySeriesBlock ? "series" : "one";
+
+    if (
+      !window.confirm(
+        scope === "series"
+          ? "Delete ALL blocks in this series?"
+          : "Delete this block?"
+      )
+    ) {
+      return;
+    }
+
+    const fd = new FormData();
+    fd.set("id", event.id);
+    fd.set("scope", scope);
+
+    startDeleteTransition(() => deleteBlockAction(fd));
   };
 
   // UI
@@ -466,10 +497,34 @@ export default function EditForm({ event, onSuccess }: Props) {
         </div>
       )}
 
-      <Button type="submit" disabled={isPending}>
-        {isSavePending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {isSavePending ? "Saving..." : "Save"}
-      </Button>
+      {deleteBlockState && !deleteBlockState.ok && deleteBlockState.error && (
+        <div className="text-sm text-red-600">
+          {Object.entries(deleteBlockState.error).map(([k, v]) => (
+            <div key={k}>{Array.isArray(v) ? v.join(", ") : v}</div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between">
+        <Button type="submit" disabled={isPending}>
+          {isSavePending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isSavePending ? "Saving..." : "Save"}
+        </Button>
+
+        <Button
+          type="button"
+          variant="destructive"
+          onClick={onDeleteBlock}
+          disabled={isPending}
+        >
+          {isDeletePending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isDeletePending
+            ? "Deleting..."
+            : applySeriesBlock
+            ? "Delete series"
+            : "Delete block"}
+        </Button>
+      </div>
     </form>
   );
 }
