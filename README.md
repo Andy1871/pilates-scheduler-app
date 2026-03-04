@@ -1,7 +1,7 @@
 # Pilates Scheduler
 
 A **full-stack calendar scheduling app** built for self-employed Pilates professionals.
-Manage sessions, clients, and blocked time in an intuitive weekly and monthly calendar — with recurring bookings, conflict detection, and timezone-safe date handling baked in from the ground up.
+Manage sessions, clients, and blocked time in an intuitive weekly and monthly calendar — with recurring bookings, conflict detection, and timezone-safe date handling.
 
 **Live Demo:** [pilates-scheduler.vercel.app](https://pilates-scheduler.vercel.app/) — Free, secure login via Google. App screenshots below if preferred.
 

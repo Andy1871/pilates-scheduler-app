@@ -1,18 +1,35 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
+import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
-
-console.log("[auth] has GOOGLE_CLIENT_ID:", !!process.env.GOOGLE_CLIENT_ID);
-console.log("[auth] has GOOGLE_CLIENT_SECRET:", !!process.env.GOOGLE_CLIENT_SECRET);
-console.log("[auth] has AUTH_SECRET:", !!process.env.AUTH_SECRET);
+import bcrypt from "bcryptjs";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),       
+  adapter: PrismaAdapter(prisma),
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+    Credentials({
+      credentials: {
+        username: { label: "Username", type: "text" },
+        password: { label: "Password", type: "password" },
+      },
+      authorize: async (credentials) => {
+        const username = credentials?.username as string | undefined;
+        const password = credentials?.password as string | undefined;
+        if (!username || !password) return null;
+
+        const user = await prisma.user.findUnique({ where: { username } });
+        if (!user?.password) return null;
+
+        const valid = await bcrypt.compare(password, user.password);
+        if (!valid) return null;
+
+        return { id: user.id, name: user.name, email: user.email };
+      },
     }),
   ],
   session: { strategy: "jwt" },
