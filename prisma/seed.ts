@@ -1,10 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { addDays, isWeekend } from "date-fns";
-import { zonedTimeToUtc } from "date-fns-tz";
 
 const prisma = new PrismaClient();
-const TZ = "Europe/London";
+
+// BST (UTC+1) starts on the last Sunday of March.
+// In 2026 that is March 29 at 01:00 UTC.
+const BST_START_2026 = new Date("2026-03-29T01:00:00Z");
 
 const clients = [
   "Sarah Mitchell", "Emma Thompson", "Lucy Davies",
@@ -25,8 +27,12 @@ const slots = [
   { time: "14:00", durationMins: 55 },
 ];
 
+// Convert a London local time string to UTC.
+// Before BST_START: London = UTC. After: London = UTC+1, so subtract 1 hour.
 function toUTC(dateISO: string, timeHHmm: string): Date {
-  return zonedTimeToUtc(`${dateISO}T${timeHHmm}:00`, TZ);
+  const naiveUTC = new Date(`${dateISO}T${timeHHmm}:00Z`);
+  const isBST = naiveUTC >= BST_START_2026;
+  return isBST ? new Date(naiveUTC.getTime() - 60 * 60 * 1000) : naiveUTC;
 }
 
 function padDate(d: Date): string {
