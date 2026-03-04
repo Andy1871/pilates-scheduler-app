@@ -46,6 +46,7 @@ export default function SignInPage() {
     if (result?.error) {
       setError("Incorrect username or password.");
     } else {
+      router.refresh();
       router.push("/");
     }
   };
